@@ -81,6 +81,10 @@ more than one proxy works too, no redis needed. point them all at the same db an
 
 staff mode wont replace your inventory unless it got backed up first, so if `features.staffmode.save-inventory` is false and staff items are on it just refuses. open sessions get restored on join or reload.
 
+inventory backups belong to the backend that made them. each paper server generates a `server-id.txt` in the plugins data folder. keep it across restarts and when moving that server. if you copy the folder to make a different backend, remove `server-id.txt` from the copy before starting it.
+
+when updating, turn off staff mode for everyone before shutting down the old version. old open backups dont have a server id, so recovery locks that players inventory instead of guessing where it belongs. if theres an old backup from a crash, check the row in `staff_sessions` and set its `server_id` to the value from the original backends `server-id.txt`, then have the player rejoin. dont assign backups to another backend or delete them to get past the lock. update all backends together so an old jar cant read another servers backup.
+
 alt bans are off by default. turn them on with `features.alt-ban.enabled: true` and set `action` to `kick` or `ban`. ban needs a positive `ban-duration-seconds`, it never perm bans alts. keep `require-forwarding: true` behind velocity so it doesnt treat the proxy ip as everyones ip, only set it false if paper runs on its own. alt bans also turn on ip logging even if `features.inspect.log-ips` is false.
 
 ## Building

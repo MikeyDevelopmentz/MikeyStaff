@@ -323,6 +323,9 @@ public class FreezeManager {
         if (log == null || log.getPlayerUuid() == null || log.getStaffUuid() == null) {
             return CompletableFuture.completedFuture(null);
         }
+        if (frozen.containsKey(log.getPlayerUuid())) {
+            return CompletableFuture.completedFuture(null);
+        }
         long duration = log.getDurationSeconds();
         if (!timeUtil.isValidConfiguredDuration(duration)) {
             return deactivate(log.getPlayerUuid(), log.getId() > 0L ? log.getId() : null, now);
@@ -359,6 +362,8 @@ public class FreezeManager {
                 || !timeUtil.isValidConfiguredDuration(duration)) {
             return;
         }
+        // the proxy echoes our own freeze back, keep its existing timer
+        if (frozen.containsKey(uuid)) return;
         FreezeState state = new FreezeState(uuid, staffUuid, safeReason(reason), startTime, duration);
         if (duration > 0L) {
             long remaining = getRemainingMillis(startTime, duration, System.currentTimeMillis());
@@ -417,6 +422,11 @@ public class FreezeManager {
                     if (shuttingDown) {
                         rollbackFreezeInsert(saved, playerId);
                         result.completeExceptionally(new IllegalStateException("freeze manager shut down"));
+                        return;
+                    }
+                    if (frozen.containsKey(playerId)) {
+                        rollbackFreezeInsert(saved, playerId);
+                        result.complete(false);
                         return;
                     }
                     cancelTitleTask(playerId);

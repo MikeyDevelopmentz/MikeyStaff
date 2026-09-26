@@ -75,17 +75,15 @@ public class PunishmentManager {
     public boolean isMutedCached(UUID uuid) {
         if (pendingMutes.contains(uuid)) return true;
         PunishmentLog log = activeMutes.get(uuid);
-        if (log != null && isStillActive(log)) return true;
-        if (log != null) activeMutes.remove(uuid);
+        // an expired mute is still a known result, dont turn it into an unknown one
+        if (log != null) return isStillActive(log);
         return !knownUnmuted.contains(uuid);
     }
 
     public boolean hasActiveMuteCached(UUID uuid) {
         if (pendingMutes.contains(uuid)) return true;
         PunishmentLog log = activeMutes.get(uuid);
-        if (log != null && isStillActive(log)) return true;
-        if (log != null) activeMutes.remove(uuid);
-        return false;
+        return log != null && isStillActive(log);
     }
 
     public boolean isBannedCached(UUID uuid) {
@@ -276,6 +274,7 @@ public class PunishmentManager {
     private void refreshMute(UUID uuid) {
         long version = nextMuteRefresh(uuid);
         knownUnmuted.remove(uuid);
+        activeMutes.computeIfPresent(uuid, (id, log) -> isStillActive(log) ? log : null);
         final CompletableFuture<List<PunishmentLog>> refresh;
         try {
             refresh = repository.findActiveByPlayerAndTypeAll(uuid, TYPE_MUTE);

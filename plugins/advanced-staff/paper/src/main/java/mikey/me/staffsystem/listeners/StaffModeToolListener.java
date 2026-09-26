@@ -85,11 +85,13 @@ public class StaffModeToolListener implements Listener {
         String upper = action.toUpperCase();
         if (upper.equals("TELEPORT")) {
             event.setCancelled(true);
+            if (!hasToolPermission(staff, "teleport.tp")) return;
             openTeleportMenu(staff, 0);
             return;
         }
         if (upper.equals("INSPECT")) {
             event.setCancelled(true);
+            if (!hasToolPermission(staff, "inspect")) return;
             openInspectMenu(staff, 0);
         }
     }
@@ -122,6 +124,8 @@ public class StaffModeToolListener implements Listener {
         Player target = (Player) entity;
         String upper = action.toUpperCase();
         if (upper.equals("TELEPORT")) {
+            event.setCancelled(true);
+            if (!hasToolPermission(staff, "teleport.tp")) return;
             if (teleportManager.teleportTo(staff, target)) {
                 staff.sendMessage(textUtil.papi(target, "teleport.tp", Map.of("%staff_target_name%", target.getName())));
             } else {
@@ -130,6 +134,8 @@ public class StaffModeToolListener implements Listener {
             return;
         }
         if (upper.equals("INSPECT")) {
+            event.setCancelled(true);
+            if (!hasToolPermission(staff, "inspect")) return;
             inspectManager.openMainMenu(staff, target);
             staff.sendMessage(textUtil.papi(target, "inspect.opened", Map.of("%staff_target_name%", target.getName())));
         }
@@ -159,6 +165,7 @@ public class StaffModeToolListener implements Listener {
             return;
         }
         event.setCancelled(true);
+        if (!hasToolPermission(staff, "freeze.use")) return;
         if (freezeManager.isFrozen(target.getUniqueId())) {
             freezeManager.unfreeze(staff, target).whenComplete((unfrozen, error) -> {
                 if (error != null) {
@@ -207,6 +214,17 @@ public class StaffModeToolListener implements Listener {
 
     private void openTeleportMenu(Player staff, int page) {
         openPlayerMenu(staff, page, TELEPORT_GUI_TITLE);
+    }
+
+    private boolean hasToolPermission(Player staff, String key) {
+        String permission = settings.getPermission(key);
+        String staffModePermission = settings.getPermission("staffmode.use");
+        if ((staffModePermission.isEmpty() || staff.hasPermission(staffModePermission))
+                && (permission.isEmpty() || staff.hasPermission(permission))) {
+            return true;
+        }
+        staff.sendMessage(textUtil.prefixed("errors.no-permission"));
+        return false;
     }
 
     private void openInspectMenu(Player staff, int page) {
@@ -314,6 +332,11 @@ public class StaffModeToolListener implements Listener {
             return;
         }
         event.setCancelled(true);
+        if (!staffModeManager.isInStaffMode(staff.getUniqueId())
+                || !hasToolPermission(staff, title.startsWith(TELEPORT_GUI_TITLE) ? "teleport.tp" : "inspect")) {
+            staff.closeInventory();
+            return;
+        }
         ItemStack clicked = event.getCurrentItem();
         if (clicked == null || clicked.getType() == Material.AIR) {
             return;

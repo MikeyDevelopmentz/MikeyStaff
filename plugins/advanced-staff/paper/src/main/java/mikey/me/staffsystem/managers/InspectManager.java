@@ -1,5 +1,6 @@
 package mikey.me.staffsystem.managers;
 
+import mikey.me.staffsystem.config.SettingsConfig;
 import mikey.me.staffsystem.database.models.FreezeLog;
 import mikey.me.staffsystem.database.models.PlayerReport;
 import mikey.me.staffsystem.database.models.PunishmentLog;
@@ -60,6 +61,7 @@ public class InspectManager {
     private final IPManager ipManager;
     private final SchedulerProvider schedulerProvider;
     private final TextUtil textUtil;
+    private final SettingsConfig settings;
     private final TimeUtil timeUtil;
     private final Map<UUID, InfoSession> sessions = new ConcurrentHashMap<>();
     private final Map<UUID, AltSession> altSessions = new ConcurrentHashMap<>();
@@ -69,13 +71,14 @@ public class InspectManager {
     private final Map<UUID, UUID> mainMenuTargets = new ConcurrentHashMap<>();
 
     public InspectManager(PunishmentManager punishmentManager, FreezeManager freezeManager, ReportManager reportManager,
-            IPManager ipManager, SchedulerProvider schedulerProvider, TextUtil textUtil) {
+            IPManager ipManager, SchedulerProvider schedulerProvider, TextUtil textUtil, SettingsConfig settings) {
         this.punishmentManager = punishmentManager;
         this.freezeManager = freezeManager;
         this.reportManager = reportManager;
         this.ipManager = ipManager;
         this.schedulerProvider = schedulerProvider;
         this.textUtil = textUtil;
+        this.settings = settings;
         this.timeUtil = new TimeUtil();
     }
 
@@ -84,12 +87,14 @@ public class InspectManager {
     }
 
     public void openInventory(Player staff, Player target) {
+        if (!hasPermission(staff, "inventory.invsee")) return;
         Inventory copy = copyInventory(staff, target.getInventory(), INVSEE_TITLE + target.getName());
         readOnlyViews.put(staff.getUniqueId(), copy);
         staff.openInventory(copy);
     }
 
     public void openEnderChest(Player staff, Player target) {
+        if (!hasPermission(staff, "inventory.ecsee")) return;
         Inventory copy = copyInventory(staff, target.getEnderChest(), ECSEE_TITLE + target.getName());
         readOnlyViews.put(staff.getUniqueId(), copy);
         staff.openInventory(copy);
@@ -499,6 +504,7 @@ public class InspectManager {
     }
 
     public void openMainMenu(Player staff, Player target) {
+        if (!hasPermission(staff, "inspect")) return;
         mainMenuTargets.put(staff.getUniqueId(), target.getUniqueId());
         String title = MAIN_MENU_TITLE + target.getName();
         Inventory inv = StaffMenuHolder.create(54, title);
@@ -699,6 +705,10 @@ public class InspectManager {
         if (title == null || !title.startsWith(MAIN_MENU_TITLE)) {
             return false;
         }
+        if (!hasPermission(staff, "inspect")) {
+            staff.closeInventory();
+            return true;
+        }
         UUID targetId = mainMenuTargets.get(staff.getUniqueId());
         Player target = targetId == null ? null : Bukkit.getPlayer(targetId);
         if (target == null) {
@@ -768,6 +778,13 @@ public class InspectManager {
             return true;
         }
         return true;
+    }
+
+    private boolean hasPermission(Player staff, String key) {
+        String permission = settings.getPermission(key);
+        if (permission.isEmpty() || staff.hasPermission(permission)) return true;
+        staff.sendMessage(textUtil.prefixed("errors.no-permission"));
+        return false;
     }
 
     public boolean handleAltAccountsClick(Player staff, String title, int slot, ItemStack clicked) {

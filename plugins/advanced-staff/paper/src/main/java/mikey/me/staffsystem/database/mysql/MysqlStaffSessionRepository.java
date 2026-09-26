@@ -6,15 +6,18 @@ import mikey.me.staffsystem.database.repositories.StaffSessionRepository;
 
 import java.sql.*;
 import java.util.Optional;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 
 public class MysqlStaffSessionRepository implements StaffSessionRepository {
 
     private final DatabaseManager databaseManager;
+    private final String serverId;
 
     public MysqlStaffSessionRepository(DatabaseManager databaseManager) {
         this.databaseManager = databaseManager;
+        this.serverId = Objects.requireNonNull(databaseManager.getServerId(), "server id");
     }
 
     @Override
@@ -22,11 +25,12 @@ public class MysqlStaffSessionRepository implements StaffSessionRepository {
         return CompletableFuture.supplyAsync(() -> {
             try (Connection connection = databaseManager.openConnection();
                  PreparedStatement statement = connection.prepareStatement(
-                     "INSERT INTO staff_sessions (staff_uuid, start_time, end_time, serialized_inventory) VALUES (?, ?, NULL, ?)",
+                     "INSERT INTO staff_sessions (staff_uuid, start_time, end_time, serialized_inventory, server_id) VALUES (?, ?, NULL, ?, ?)",
                      Statement.RETURN_GENERATED_KEYS)) {
                 statement.setString(1, staffUuid.toString());
                 statement.setLong(2, startTime);
                 statement.setString(3, serializedInventory);
+                statement.setString(4, serverId);
                 statement.executeUpdate();
                 try (ResultSet keys = statement.getGeneratedKeys()) {
                     if (keys.next()) {
@@ -52,9 +56,10 @@ public class MysqlStaffSessionRepository implements StaffSessionRepository {
         return CompletableFuture.runAsync(() -> {
             try (Connection connection = databaseManager.openConnection();
                  PreparedStatement statement = connection.prepareStatement(
-                     "UPDATE staff_sessions SET end_time = ? WHERE id = ? AND end_time IS NULL")) {
+                     "UPDATE staff_sessions SET end_time = ? WHERE id = ? AND server_id = ? AND end_time IS NULL")) {
                 statement.setLong(1, endTime);
                 statement.setLong(2, id);
+                statement.setString(3, serverId);
                 statement.executeUpdate();
             } catch (SQLException e) {
                 databaseManager.logSqlFailure("end staff session id=" + id, e);
@@ -76,12 +81,14 @@ public class MysqlStaffSessionRepository implements StaffSessionRepository {
     private CompletableFuture<Optional<StaffSession>> findSession(UUID staffUuid, boolean openOnly) {
         return CompletableFuture.supplyAsync(() -> {
             String sql = "SELECT id, staff_uuid, start_time, end_time, serialized_inventory " +
-                    "FROM staff_sessions WHERE staff_uuid = ?" +
+                    "FROM staff_sessions WHERE staff_uuid = ? AND server_id = ?" +
                     (openOnly ? " AND end_time IS NULL" : "") +
                     " ORDER BY id DESC LIMIT 1";
             try (Connection connection = databaseManager.openConnection();
                  PreparedStatement statement = connection.prepareStatement(sql)) {
+                if (openOnly) checkLegacySession(connection, staffUuid);
                 statement.setString(1, staffUuid.toString());
+                statement.setString(2, serverId);
                 try (ResultSet rs = statement.executeQuery()) {
                     if (rs.next()) {
                         long id = rs.getLong("id");
@@ -98,5 +105,18 @@ public class MysqlStaffSessionRepository implements StaffSessionRepository {
             }
             return Optional.empty();
         }, databaseManager.getDbExecutor());
+    }
+
+    private void checkLegacySession(Connection connection, UUID staffUuid) throws SQLException {
+        try (PreparedStatement statement = connection.prepareStatement(
+                "SELECT id FROM staff_sessions WHERE staff_uuid = ? AND server_id IS NULL AND end_time IS NULL LIMIT 1")) {
+            statement.setString(1, staffUuid.toString());
+            try (ResultSet rs = statement.executeQuery()) {
+                if (rs.next()) {
+                    throw new SQLException("Inventory session " + rs.getLong("id")
+                            + " has no server id. Assign it to its original server before recovery (see README).");
+                }
+            }
+        }
     }
 }

@@ -153,7 +153,7 @@ public class StaffSystemPlugin extends JavaPlugin {
         this.ipManager = new IPManager(configurationManager, databaseManager.createPlayerIPLogRepository(),
                 databaseManager.createLoginLogRepository());
         this.inspectManager = new InspectManager(punishmentManager, freezeManager, reportManager, ipManager,
-                schedulerProvider, textUtil);
+                schedulerProvider, textUtil, configurationManager.getSettings());
         if (!configurationManager.getSettings().isProxyless()) {
             schedulerProvider.runSyncTimer(networkPlayerResolver::requestNetworkPlayerList, 40L, 100L);
             schedulerProvider.runSyncTimer(velocityMessenger::flush, 60L, 60L);

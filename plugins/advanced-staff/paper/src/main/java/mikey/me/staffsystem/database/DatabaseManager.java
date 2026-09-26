@@ -25,6 +25,7 @@ public class DatabaseManager {
     private final SettingsConfig settings;
     private final ExecutorService dbExecutor;
     private HikariDataSource dataSource;
+    private String serverId;
 
     public DatabaseManager(Plugin plugin, ConfigurationManager configurationManager) {
         this.plugin = plugin;
@@ -38,6 +39,7 @@ public class DatabaseManager {
     }
 
     public void initialize() {
+        serverId = ServerIdentity.load(plugin.getDataFolder().toPath());
         HikariConfig config = new HikariConfig();
         // autoReconnect is broken with pools, hikari handles dead connections itself
         String jdbcUrl = "jdbc:mysql://" + settings.getDbHost() + ":" + settings.getDbPort()
@@ -71,6 +73,10 @@ public class DatabaseManager {
 
     public Connection openConnection() throws SQLException {
         return dataSource.getConnection();
+    }
+
+    public String getServerId() {
+        return serverId;
     }
 
     // db work goes here so we never block the jvm common pool with jdbc
@@ -154,9 +160,12 @@ public class DatabaseManager {
             statement.executeUpdate(
                 "CREATE TABLE IF NOT EXISTS staff_sessions (" +
                 "id BIGINT AUTO_INCREMENT PRIMARY KEY, " +
-                "staff_uuid VARCHAR(36) NOT NULL, start_time BIGINT, end_time BIGINT, serialized_inventory MEDIUMTEXT)");
+                "staff_uuid VARCHAR(36) NOT NULL, server_id VARCHAR(36), " +
+                "start_time BIGINT, end_time BIGINT, serialized_inventory MEDIUMTEXT)");
+             ensureStaffSessionServerId(connection);
              ensureIndex(connection, "staff_sessions", "idx_staff_sessions_staff", "staff_uuid");
              ensureIndex(connection, "staff_sessions", "idx_staff_sessions_open", "staff_uuid, end_time, id");
+             ensureIndex(connection, "staff_sessions", "idx_staff_sessions_server", "staff_uuid, server_id, end_time, id");
 
             statement.executeUpdate(
                 "CREATE TABLE IF NOT EXISTS player_ip_logs (" +
@@ -190,6 +199,19 @@ public class DatabaseManager {
         } catch (SQLException e) {
             plugin.getLogger().severe("Failed to create database schema: " + e.getMessage());
             throw new RuntimeException("Database schema creation failed", e);
+        }
+    }
+
+    static void ensureStaffSessionServerId(Connection connection) throws SQLException {
+        try (ResultSet columns = connection.getMetaData().getColumns(
+                connection.getCatalog(), null, "staff_sessions", "server_id")) {
+            if (columns.next()) return;
+        }
+        try (Statement statement = connection.createStatement()) {
+            // old backups stay unassigned, we dont know which server they came from
+            statement.executeUpdate("ALTER TABLE staff_sessions ADD COLUMN server_id VARCHAR(36)");
+        } catch (SQLException e) {
+            if (e.getErrorCode() != 1060) throw e;
         }
     }
 

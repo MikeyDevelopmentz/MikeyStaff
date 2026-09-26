@@ -14,6 +14,8 @@ dependencies {
     implementation("mikey.core:mikey-core:0.1.0-SNAPSHOT")
     compileOnly("io.papermc.paper:paper-api:1.21.10-R0.1-SNAPSHOT")
     testImplementation("io.papermc.paper:paper-api:1.21.10-R0.1-SNAPSHOT")
+    testImplementation("org.mockito:mockito-core:5.14.2")
+    testImplementation("com.h2database:h2:2.3.232")
     compileOnly("me.clip:placeholderapi:2.11.7")
     implementation("com.zaxxer:HikariCP:5.1.0")
     implementation("com.mysql:mysql-connector-j:8.4.0")

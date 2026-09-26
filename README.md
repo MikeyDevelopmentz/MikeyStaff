@@ -101,4 +101,4 @@ then:
 
 `coreTest` runs the MikeyCore tests too, `build` builds and tests both plugins. jars end up in `plugins/advanced-staff/paper/build/libs` and `plugins/advanced-staff/velocity/build/libs`, core gets shaded into both.
 
-CI needs a `MIKEYCORE_TOKEN` secret with read access to MikeyCore since its private and the default `GITHUB_TOKEN` cant read it.
+CI checks out MikeyCore next to it and builds both. every push to main updates the `latest build` release with the paper and velocity jars.

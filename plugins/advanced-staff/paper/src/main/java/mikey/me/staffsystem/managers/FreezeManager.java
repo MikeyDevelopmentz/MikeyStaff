@@ -494,22 +494,28 @@ public class FreezeManager {
     }
 
     private void expire(UUID playerId, FreezeState expectedState) {
-        if (!available.get() || frozen.get(playerId) != expectedState || pendingUnfreezes.contains(playerId)) {
+        if (!available.get() || frozen.get(playerId) != expectedState) {
             return;
         }
         unfreezeTasks.remove(playerId);
+        if (pendingUnfreezes.contains(playerId)) {
+            retryExpiry(playerId, expectedState);
+            return;
+        }
         CompletableFuture<Void> persistence;
         try {
             persistence = deactivate(playerId, activeLogIds.get(playerId), System.currentTimeMillis());
         } catch (RuntimeException e) {
             Bukkit.getLogger().warning("[Staff] failed to start freeze expiry for "
                     + playerId + ": " + e.getMessage());
+            retryExpiry(playerId, expectedState);
             return;
         }
         persistence.whenComplete((ignored, error) -> {
             if (error != null) {
                 Bukkit.getLogger().warning("[Staff] failed to deactivate expired freeze for "
                         + playerId + ": " + error.getMessage());
+                retryExpiry(playerId, expectedState);
                 return;
             }
             try {
@@ -526,8 +532,21 @@ public class FreezeManager {
             } catch (RuntimeException schedulingError) {
                 Bukkit.getLogger().warning("[Staff] failed to apply freeze expiry for "
                         + playerId + ": " + schedulingError.getMessage());
+                retryExpiry(playerId, expectedState);
             }
         });
+    }
+
+    private void retryExpiry(UUID playerId, FreezeState expectedState) {
+        try {
+            schedulerProvider.runSync(() -> {
+                if (!shuttingDown && available.get() && frozen.get(playerId) == expectedState) {
+                    scheduleExpiry(playerId, expectedState, 100L);
+                }
+            });
+        } catch (RuntimeException e) {
+            Bukkit.getLogger().warning("[Staff] could not retry freeze expiry for " + playerId + ": " + e.getMessage());
+        }
     }
 
     private CompletableFuture<Void> deactivate(UUID playerId, Long logId, long endTime) {

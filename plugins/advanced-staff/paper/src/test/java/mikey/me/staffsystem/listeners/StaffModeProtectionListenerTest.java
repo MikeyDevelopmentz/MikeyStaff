@@ -19,6 +19,13 @@ class StaffModeProtectionListenerTest {
     }
 
     @Test
+    void ignoresNamespacesInCommandArguments() {
+        assertEquals("/give", StaffModeProtectionListener.commandName("/give @s minecraft:diamond"));
+        assertEquals("/clear", StaffModeProtectionListener.commandName("/clear @s minecraft:stone"));
+        assertEquals("/give", StaffModeProtectionListener.commandName("/minecraft:give @s minecraft:diamond"));
+    }
+
+    @Test
     void blocksStaffInventoryClicksButAllowsStaffMenuClicks() {
         assertTrue(StaffModeProtectionListener.shouldBlockInventoryClick(true, false, false, false, false, false, false));
         assertTrue(StaffModeProtectionListener.shouldBlockInventoryClick(false, true, false, true, false, false, false));

@@ -280,12 +280,18 @@ public class PunishmentManager {
             refresh = repository.findActiveByPlayerAndTypeAll(uuid, TYPE_MUTE);
         } catch (RuntimeException e) {
             Bukkit.getLogger().warning("[Staff] mute refresh failed for " + uuid + ": " + e.getMessage());
+            retryMuteRefresh(uuid, version);
             return;
         }
         refresh.whenComplete((logs, error) -> {
-            if (!isLatestMuteRefresh(uuid, version) || pendingMutes.contains(uuid)) return;
+            if (!isLatestMuteRefresh(uuid, version)) return;
+            if (pendingMutes.contains(uuid)) {
+                retryMuteRefresh(uuid, version);
+                return;
+            }
             if (error != null) {
                 Bukkit.getLogger().warning("[Staff] mute refresh failed for " + uuid + ": " + error.getMessage());
+                retryMuteRefresh(uuid, version);
                 return;
             }
             PunishmentLog active = findActive(logs);
@@ -296,6 +302,22 @@ public class PunishmentManager {
                 knownUnmuted.add(uuid);
             }
         });
+    }
+
+    private void retryMuteRefresh(UUID uuid, long version) {
+        if (!isLatestMuteRefresh(uuid, version)) return;
+        try {
+            schedulerProvider.runSyncLater(() -> {
+                if (!isLatestMuteRefresh(uuid, version)) return;
+                if (pendingMutes.contains(uuid)) {
+                    retryMuteRefresh(uuid, version);
+                } else {
+                    refreshMute(uuid);
+                }
+            }, 100L);
+        } catch (RuntimeException e) {
+            Bukkit.getLogger().warning("[Staff] could not retry mute refresh for " + uuid + ": " + e.getMessage());
+        }
     }
 
     private void handleMuteSync(String json) {

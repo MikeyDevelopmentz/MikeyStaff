@@ -255,14 +255,15 @@ public class StaffModeProtectionListener implements Listener {
 
     static String commandName(String message) {
         String command = message == null ? "" : message.trim().toLowerCase(Locale.ROOT);
+        int separator = command.indexOf(' ');
+        if (separator >= 0) command = command.substring(0, separator);
         if (command.startsWith("/")) {
             int namespaceEnd = command.indexOf(':');
             if (namespaceEnd > 1) {
                 command = "/" + command.substring(namespaceEnd + 1);
             }
         }
-        int separator = command.indexOf(' ');
-        return separator < 0 ? command : command.substring(0, separator);
+        return command;
     }
 
     static boolean isStaffMenu(InventoryHolder holder) {

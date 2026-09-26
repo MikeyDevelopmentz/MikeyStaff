@@ -78,7 +78,6 @@ inspect:
 
 teleport:
   tp: "%prefix%&aTeleported to %staff_target_name%."
-  tphere: "%prefix%&aTeleported %staff_target_name% to you."
   failed: "%prefix%&cTeleport failed."
 
 staffchat:

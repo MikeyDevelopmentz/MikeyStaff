@@ -11,7 +11,6 @@ what it does:
 - reports and staff notes
 - invsee, ecsee and an inspect gui (punishments, freezes, reports, ip history, alts, login logs)
 - staff chat
-- tp and tphere
 - PlaceholderAPI placeholders under `%staff_...%` if papi is installed
 - works on folia too, same paper jar
 
@@ -31,8 +30,6 @@ what it does:
 | `/note add <player> <text>` / `/note remove <id>` | add or remove a note |
 | `/notes <player> [page]` | see a players notes |
 | `/staffchat [message]` | send to staff chat, or toggle it with no message |
-| `/tp <player>` | tp to a player |
-| `/tphere <player>` | tp a player to you |
 | `/ban <player> [time] [reason]` | ban |
 | `/unban <player>` | unban |
 | `/mute <player> [time] [reason]` | mute |
@@ -55,7 +52,7 @@ you can change all of these in `settings.yml`, these are the defaults:
 - notes: `staff.notes.add`, `staff.notes.remove`, `staff.notes.view`
 - reports: `staff.reports.view`, `staff.reports.clear`. anyone can `/report` by default
 - staff chat: `staff.staffchat`
-- teleport: `staff.teleport.tp`, `staff.teleport.tphere`
+- staff teleport tool: `staff.teleport.tp`
 - punishments: `staff.punishments.ban`, `staff.punishments.ban-notify`, `staff.punishments.unban`, `staff.punishments.mute`, `staff.punishments.unmute`, `staff.punishments.kick`
 
 ## Setup

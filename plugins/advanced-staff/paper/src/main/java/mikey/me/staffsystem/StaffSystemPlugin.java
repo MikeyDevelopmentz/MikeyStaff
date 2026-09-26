@@ -247,16 +247,6 @@ public class StaffSystemPlugin extends JavaPlugin {
             getCommand("staffchat").setExecutor(staffChatCommand);
             getCommand("staffchat").setTabCompleter(staffChatCommand);
         }
-        if (getCommand("tp") != null) {
-            TeleportCommand teleportCommand = new TeleportCommand(configurationManager, teleportManager, textUtil);
-            getCommand("tp").setExecutor(teleportCommand);
-            getCommand("tp").setTabCompleter(teleportCommand);
-        }
-        if (getCommand("tphere") != null) {
-            TeleportHereCommand teleportHereCommand = new TeleportHereCommand(configurationManager, teleportManager, textUtil);
-            getCommand("tphere").setExecutor(teleportHereCommand);
-            getCommand("tphere").setTabCompleter(teleportHereCommand);
-        }
         if (getCommand("ban") != null) {
             BanCommand banCommand = new BanCommand(configurationManager, punishmentManager, textUtil,
                     networkPlayerResolver, schedulerProvider);
@@ -309,7 +299,7 @@ public class StaffSystemPlugin extends JavaPlugin {
             {"vanishlist", "vanish.list"}, {"freeze", "freeze.use"}, {"unfreeze", "freeze.use"},
             {"freezelist", "freeze.list"}, {"invsee", "inventory.invsee"}, {"ecsee", "inventory.ecsee"},
             {"inspect", "inspect"}, {"note", "notes.add", "notes.remove"}, {"notes", "notes.view"},
-            {"staffchat", "staffchat"}, {"tp", "teleport.tp"}, {"tphere", "teleport.tphere"},
+            {"staffchat", "staffchat"},
             {"ban", "punishments.ban"}, {"unban", "punishments.unban"}, {"mute", "punishments.mute"},
             {"unmute", "punishments.unmute"}, {"kick", "punishments.kick"}, {"report", "reports.report"},
             {"reports", "reports.view"}

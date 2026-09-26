@@ -53,14 +53,6 @@ commands:
     description: Staff chat or toggle
     usage: "/staffchat [message]"
     permission: "staff.staffchat"
-  tp:
-    description: Teleport to a player
-    usage: "/tp <player>"
-    permission: "staff.teleport.tp"
-  tphere:
-    description: Teleport a player to you
-    usage: "/tphere <player>"
-    permission: "staff.teleport.tphere"
   ban:
     description: Ban a player
     usage: "/ban <player> [time] [reason]"
@@ -162,8 +154,5 @@ permissions:
     description: Use staff chat
     default: op
   staff.teleport.tp:
-    description: Teleport to players
-    default: op
-  staff.teleport.tphere:
-    description: Teleport players to you
+    description: Use the staff teleport tool
     default: op

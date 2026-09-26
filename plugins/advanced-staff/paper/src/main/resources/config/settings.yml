@@ -74,4 +74,3 @@ permissions:
   staffchat: "staff.staffchat"
   teleport:
     tp: "staff.teleport.tp"
-    tphere: "staff.teleport.tphere"

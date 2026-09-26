@@ -22,13 +22,6 @@ public class TeleportManager {
         return teleport(sender, target.getLocation());
     }
 
-    public boolean teleportHere(Player sender, Player target) {
-        if (!canTeleport(target, sender)) {
-            return false;
-        }
-        return teleport(target, sender.getLocation());
-    }
-
     // folia only allows async teleports, on paper a loaded chunk finishes right away
     private boolean teleport(Player moving, Location destination) {
         CompletableFuture<Boolean> result = moving.teleportAsync(destination);

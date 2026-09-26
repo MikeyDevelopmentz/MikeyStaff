@@ -1,0 +1,23 @@
+config-version: 1   # do not edit
+
+staffmode:
+  enabled: true
+  hotbar:
+    slot-0:
+      material: COMPASS
+      name: "&bStaff Teleport"
+      lore:
+        - "&7Right click to teleport."
+      action: TELEPORT
+    slot-1:
+      material: BLAZE_ROD
+      name: "&cFreeze Tool"
+      lore:
+        - "&7Left click a player to freeze."
+      action: FREEZE
+    slot-2:
+      material: BOOK
+      name: "&eInspect Tool"
+      lore:
+        - "&7Right click a player to inspect."
+      action: INSPECT

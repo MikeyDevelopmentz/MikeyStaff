@@ -1,0 +1,15 @@
+config-version: 1   # do not edit
+
+presets:
+  times:
+    - "10m"
+    - "30m"
+    - "1h"
+    - "1d"
+    - "perm"
+  reasons:
+    - "Spamming"
+    - "Advertising"
+    - "Racism"
+    - "Cheating"
+    - "Toxicity"

@@ -1,0 +1,77 @@
+config-version: 1   # do not edit
+
+database:
+  host: "localhost"
+  port: 3306
+  database: "spearmace"
+  user: "root"
+  password: "changeme"
+  pool-size: 5
+
+network:
+  mode: proxy
+  shared-secret: ""
+
+features:
+  vanish:
+    silent-join-leave: true
+  staffmode:
+    auto-vanish: true
+    save-inventory: true
+  alt-ban:
+    enabled: false
+    action: kick
+    ban-duration-seconds: 3600
+    require-forwarding: true
+  freeze:
+    default-duration-seconds: 0  # 0 = permanent when no duration is supplied
+    send-chat-message: true
+    send-command-message: true
+    send-title: true
+    persistent-title: true
+    title-update-interval-ticks: 40
+  staffchat:
+    enabled: true
+  teleport:
+    safety-checks: true
+  inspect:
+    log-ips: true
+  reports:
+    cooldown-seconds: 30
+    same-target-cooldown-seconds: 600  # 10 minutes
+
+permissions:
+  punishments:
+    ban: "staff.punishments.ban"
+    ban-notify: "staff.punishments.ban-notify"
+    unban: "staff.punishments.unban"
+    mute: "staff.punishments.mute"
+    unmute: "staff.punishments.unmute"
+    kick: "staff.punishments.kick"
+  staffmode:
+    use: "staff.staffmode.use"
+    reload: "staff.staffmode.reload"
+  vanish:
+    self: "staff.vanish.self"
+    other: "staff.vanish.other"
+    list: "staff.vanish.list"
+  freeze:
+    use: "staff.freeze.use"
+    list: "staff.freeze.list"
+    logout-notify: "staff.freeze.logout-notify"
+  inventory:
+    invsee: "staff.inventory.invsee"
+    ecsee: "staff.inventory.ecsee"
+  inspect: "staff.inspect"
+  notes:
+    add: "staff.notes.add"
+    remove: "staff.notes.remove"
+    view: "staff.notes.view"
+  reports:
+    report: ""
+    view: "staff.reports.view"
+    clear: "staff.reports.clear"
+  staffchat: "staff.staffchat"
+  teleport:
+    tp: "staff.teleport.tp"
+    tphere: "staff.teleport.tphere"

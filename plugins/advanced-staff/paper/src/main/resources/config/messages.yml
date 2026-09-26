@@ -1,0 +1,92 @@
+config-version: 1   # do not edit
+
+prefix: "&7[&bStaff&7] "
+
+errors:
+  no-permission: "%prefix%&cYou don't have permission."
+  player-not-found: "%prefix%&cPlayer not found."
+  invalid-usage: "%prefix%&cInvalid usage."
+  in-game-only: "%prefix%&cIn-game only."
+  self-report: "%prefix%&cYou can't report yourself."
+  database-error: "%prefix%&cDatabase error, try again."
+
+punishments:
+  muted-chat: "%prefix%&cYou're muted."
+  ban-issued: "%prefix%&cBanned &f%target_name% &cfor &f%duration%&c. Reason: &f%reason%"
+  ban-broadcast: "%prefix%&c%target_name% &7was banned by &f%staff_name%&7. Reason: &f%reason%"
+  alt-ban-broadcast: "%prefix%&c%target_name% &7was auto-banned &8(alt of &f%linked_name%&8)"
+  mute-issued: "%prefix%&eMuted &f%target_name% &efor &f%duration%&e. Reason: &f%reason%"
+  unmute-issued: "%prefix%&aUnmuted &f%target_name%&a."
+  unban-issued: "%prefix%&aUnbanned &f%target_name%&a."
+  kick-issued: "%prefix%&cKicked &f%target_name%&c. Reason: &f%reason%"
+  already-banned: "%prefix%&cThat player is already banned."
+  already-muted: "%prefix%&cThat player is already muted."
+  not-banned: "%prefix%&cThat player is not banned."
+  ban-kick: "&cBanned. &7By &f%staff_name% &7for &c%staff_ban_time_remaining%&7. Reason: &f%reason%"
+  alt-ban-kick: "&cConnection blocked by alt-ban protection.\n&7Linked account: &f%linked_name%\n&7Reason: &f%reason%"
+  kick-target: "&cKicked by &f%staff_name%&c. Reason: &f%reason%"
+  mute-target: "%prefix%&cMuted by &f%staff_name% &cfor &f%duration%&c. Reason: &f%reason%"
+  unmute-target: "%prefix%&aUnmuted by &f%staff_name%&a."
+
+vanish:
+  self-on: "%prefix%&aNow vanished."
+  self-off: "%prefix%&cNo longer vanished."
+  other-on: "%prefix%&a%staff_vanish_player% vanished by %staff_vanish_staff%."
+  other-off: "%prefix%&c%staff_vanish_player% unvanished by %staff_vanish_staff%."
+  list-header: "%prefix%&bVanished:"
+  list-entry: "&7- %staff_vanish_player%"
+
+freeze:
+  frozen: "%prefix%&cFrozen by %staff_frozen_staff%. Reason: %staff_freeze_reason%"
+  unfrozen: "%prefix%&aUnfrozen by %frozen_staff%."
+  staff-freeze: "%prefix%&c%staff_frozen_player% frozen by %staff_frozen_staff%."
+  staff-unfreeze: "%prefix%&a%frozen_player% unfrozen by %frozen_staff%."
+  list-header: "%prefix%&bFrozen:"
+  list-entry: "&7- %staff_frozen_player% &8(%staff_freeze_time_remaining%)"
+  already-frozen: "%prefix%&cAlready frozen."
+  not-frozen: "%prefix%&cThat player is not frozen."
+  chat-blocked: "%prefix%&cYou can't chat while frozen."
+  command-blocked: "%prefix%&cYou can't run commands while frozen."
+  logged-out: "%prefix%&c%player_name% logged out while frozen!"
+
+notes:
+  added: "%prefix%&aNote added for %target_name%."
+  removed: "%prefix%&aNote %note_id% removed."
+  not-found: "%prefix%&cNote %note_id% not found."
+  header: "%prefix%&bNotes for %target_name%:"
+  entry: "%prefix%&7%note_id% &8- &f%note_text% &7by %note_staff% on %note_date%"
+  none: "%prefix%&7No notes."
+  page: "%prefix%&7Page %page%/%pages%, &f/notes %target_name% <page>&7 for more."
+
+reports:
+  submitted: "%prefix%&aReport submitted against &f%target_name%&a."
+  header: "%prefix%&bReports for %target_name%:"
+  entry: "%prefix%&7%report_id% &8- &f%report_reason% &7by %report_reporter% on %report_date%"
+  none: "%prefix%&7No reports."
+  page: "%prefix%&7Page %page%/%pages%, &f/reports list %target_name% <page>&7 for more."
+  cleared: "%prefix%&aCleared reports by &f%target_name%&a."
+  cooldown: "%prefix%&cWait &f%seconds%s &cbefore filing another report."
+  duplicate: "%prefix%&cYou already reported &f%target_name%&c. Try again in &f%seconds%s&c."
+
+staffmode:
+  "on": "%prefix%&aStaff mode on."
+  "off": "%prefix%&cStaff mode off."
+  reloaded: "%prefix%&aReloaded."
+
+inspect:
+  opened: "%prefix%&aInspecting %staff_target_name%."
+
+teleport:
+  tp: "%prefix%&aTeleported to %staff_target_name%."
+  tphere: "%prefix%&aTeleported %staff_target_name% to you."
+  failed: "%prefix%&cTeleport failed."
+
+staffchat:
+  format: "&b[Staff] %staff_target_name%&7: &f%message%"
+  "on": "%prefix%&aStaff chat on."
+  "off": "%prefix%&cStaff chat off."
+  disabled: "%prefix%&cStaff chat is disabled."
+
+freeze-display:
+  title: "&cYou are frozen"
+  subtitle: "&7Don't log out."

@@ -1,0 +1,47 @@
+name: Build
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: Advanced-Staff
+
+      - name: Checkout MikeyCore
+        uses: actions/checkout@v4
+        with:
+          repository: MikeyDevelopmentz/MikeyCore
+          ref: main
+          token: ${{ secrets.MIKEYCORE_TOKEN }}
+          path: MikeyCore
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@af1da67850ed9a4cedd57bfd976089dd991e2582
+
+      - name: Build with Gradle
+        working-directory: Advanced-Staff
+        run: ./gradlew coreTest build
+
+      - name: Upload jars
+        uses: actions/upload-artifact@v4
+        with:
+          name: advanced-staff-jars
+          path: |
+            Advanced-Staff/plugins/advanced-staff/paper/build/libs/*.jar
+            Advanced-Staff/plugins/advanced-staff/velocity/build/libs/*.jar

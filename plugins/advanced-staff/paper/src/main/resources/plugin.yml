@@ -1,0 +1,169 @@
+name: Staff
+version: '1.0-SNAPSHOT'
+main: mikey.me.staffsystem.StaffSystemPlugin
+api-version: '1.21'
+folia-supported: true
+softdepend: [PlaceholderAPI]
+commands:
+  staffmode:
+    description: Staff mode toggle and reload
+    usage: "/staffmode [reload]"
+    permission: "staff.staffmode.use;staff.staffmode.reload"
+  vanish:
+    description: Toggle vanish
+    usage: "/vanish [player]"
+    permission: "staff.vanish.self;staff.vanish.other"
+  vanishlist:
+    description: List vanished players
+    usage: "/vanishlist"
+    permission: "staff.vanish.list"
+  freeze:
+    description: Freeze a player
+    usage: "/freeze <player> [time] [reason]"
+    permission: "staff.freeze.use"
+  unfreeze:
+    description: Unfreeze a player
+    usage: "/unfreeze <player>"
+    permission: "staff.freeze.use"
+  freezelist:
+    description: List frozen players
+    usage: "/freezelist"
+    permission: "staff.freeze.list"
+  invsee:
+    description: View a player's inventory
+    usage: "/invsee <player>"
+    permission: "staff.inventory.invsee"
+  ecsee:
+    description: View a player's ender chest
+    usage: "/ecsee <player>"
+    permission: "staff.inventory.ecsee"
+  inspect:
+    description: Open inspect GUI for a player
+    usage: "/inspect <player>"
+    permission: "staff.inspect"
+  note:
+    description: Manage player notes
+    usage: "/note add <player> <text> | /note remove <id>"
+    permission: "staff.notes.add;staff.notes.remove"
+  notes:
+    description: View player notes
+    usage: "/notes <player> [page]"
+    permission: "staff.notes.view"
+  staffchat:
+    description: Staff chat or toggle
+    usage: "/staffchat [message]"
+    permission: "staff.staffchat"
+  tp:
+    description: Teleport to a player
+    usage: "/tp <player>"
+    permission: "staff.teleport.tp"
+  tphere:
+    description: Teleport a player to you
+    usage: "/tphere <player>"
+    permission: "staff.teleport.tphere"
+  ban:
+    description: Ban a player
+    usage: "/ban <player> [time] [reason]"
+    permission: "staff.punishments.ban"
+  unban:
+    description: Unban a player
+    usage: "/unban <player>"
+    permission: "staff.punishments.unban"
+  mute:
+    description: Mute a player
+    usage: "/mute <player> [time] [reason]"
+    permission: "staff.punishments.mute"
+  unmute:
+    description: Unmute a player
+    usage: "/unmute <player>"
+    permission: "staff.punishments.unmute"
+  kick:
+    description: Kick a player
+    usage: "/kick <player> [reason]"
+    permission: "staff.punishments.kick"
+  report:
+    description: Report a player
+    usage: "/report <player> <reason>"
+  reports:
+    description: View player reports and manage report tools
+    usage: "/reports [gui|list <player> [page]|clear <player>]"
+    permission: "staff.reports.view"
+permissions:
+  staff.punishments.ban:
+    description: Ban players
+    default: op
+  staff.punishments.ban-notify:
+    description: See ban broadcasts
+    default: op
+  staff.punishments.unban:
+    description: Unban players
+    default: op
+  staff.punishments.mute:
+    description: Mute players
+    default: op
+  staff.punishments.unmute:
+    description: Unmute players
+    default: op
+  staff.punishments.kick:
+    description: Kick players
+    default: op
+  staff.staffmode.use:
+    description: Toggle staff mode
+    default: op
+  staff.staffmode.reload:
+    description: Reload the config
+    default: op
+  staff.vanish.self:
+    description: Vanish yourself
+    default: op
+  staff.vanish.other:
+    description: Vanish other players
+    default: op
+  staff.vanish.list:
+    description: List vanished players
+    default: op
+  staff.freeze.use:
+    description: Freeze and unfreeze players
+    default: op
+  staff.freeze.list:
+    description: List frozen players
+    default: op
+  staff.freeze.logout-notify:
+    description: Get told when a frozen player logs out
+    default: op
+  staff.inventory.invsee:
+    description: View player inventories
+    default: op
+  staff.inventory.ecsee:
+    description: View player ender chests
+    default: op
+  staff.inspect:
+    description: Open the inspect gui
+    default: op
+  staff.notes.add:
+    description: Add player notes
+    default: op
+  staff.notes.remove:
+    description: Remove player notes
+    default: op
+  staff.notes.view:
+    description: View player notes
+    default: op
+  staff.reports.report:
+    description: Report players, only checked if set in settings.yml
+    default: true
+  staff.reports.view:
+    description: View reports and get report alerts
+    default: op
+  staff.reports.clear:
+    description: Clear reports
+    default: op
+  staff.staffchat:
+    description: Use staff chat
+    default: op
+  staff.teleport.tp:
+    description: Teleport to players
+    default: op
+  staff.teleport.tphere:
+    description: Teleport players to you
+    default: op

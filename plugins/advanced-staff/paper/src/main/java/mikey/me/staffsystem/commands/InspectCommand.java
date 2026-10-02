@@ -34,8 +34,7 @@ public class InspectCommand implements CommandExecutor, TabCompleter {
             return true;
         }
         Player staff = (Player) sender;
-        String permission = settings.getPermission("inspect");
-        if (!staff.hasPermission(permission)) {
+        if (!settings.permits(staff, "inspect")) {
             staff.sendMessage(textUtil.prefixed("errors.no-permission"));
             return true;
         }

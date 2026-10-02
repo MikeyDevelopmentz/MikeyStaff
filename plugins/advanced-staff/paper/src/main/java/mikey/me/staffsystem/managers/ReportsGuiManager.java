@@ -179,7 +179,7 @@ public class ReportsGuiManager {
         String title = TITLE_BASE + ChatColor.GRAY + " [" + filterName + "] (" + (page + 1) + "/" + (maxPage + 1) + ")";
         Inventory inv = StaffMenuHolder.create(54, title);
 
-        ItemStack filler = createItem(Material.GRAY_STAINED_GLASS_PANE, ChatColor.DARK_GRAY + "", null);
+        ItemStack filler = createItem(Material.GRAY_STAINED_GLASS_PANE, ChatColor.DARK_GRAY.toString(), null);
         for (int i = 0; i < inv.getSize(); i++) {
             inv.setItem(i, filler);
         }

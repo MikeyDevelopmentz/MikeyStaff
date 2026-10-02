@@ -7,7 +7,7 @@ import mikey.me.staffsystem.database.models.VanishLog;
 import mikey.me.staffsystem.database.repositories.VanishLogRepository;
 import mikey.me.staffsystem.messaging.VelocityMessenger;
 import mikey.me.staffsystem.packets.PacketService;
-import mikey.me.staffsystem.utils.JsonUtil;
+import mikey.me.core.json.JsonUtil;
 import mikey.me.staffsystem.utils.SchedulerProvider;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;

@@ -1,6 +1,6 @@
 # MikeyStaff
 
-Staff plugin for Paper 1.21+, plus an optional Velocity plugin if you run a network. everything gets stored in MySQL.
+Staff plugin for Paper 1.21+, plus an optional Velocity plugin if you run a network. everything lives in MySQL.
 
 what it does:
 
@@ -76,7 +76,7 @@ config files:
 
 more than one proxy works too, no redis needed. point them all at the same db and shared secret. each proxy needs its own `network.proxy-id` in its `config.properties`, it gets generated on first start, so if you copy a proxy folder blank it on the copy.
 
-staff mode wont replace your inventory unless it got backed up first, so if `features.staffmode.save-inventory` is false and staff items are on it just refuses. open sessions get restored on join or reload.
+staff mode wont replace your inventory unless it got backed up first. so if `features.staffmode.save-inventory` is false and staff items are on it just refuses. open sessions get restored on join or reload.
 
 inventory backups belong to the backend that made them. each paper server generates a `server-id.txt` in the plugins data folder. keep it across restarts and when moving that server. if you copy the folder to make a different backend, remove `server-id.txt` from the copy before starting it.
 
@@ -102,4 +102,4 @@ then:
 
 `coreTest` runs the MikeyCore tests too, `build` builds and tests both plugins. jars end up in `plugins/advanced-staff/paper/build/libs` and `plugins/advanced-staff/velocity/build/libs`, core gets shaded into both.
 
-CI checks out MikeyCore next to it and builds both. every push to main updates the `latest build` release with the paper and velocity jars.
+ci checks out MikeyCore next to it and builds both. every push to main updates the `latest build` release with the paper and velocity jars.

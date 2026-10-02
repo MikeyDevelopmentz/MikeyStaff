@@ -3,7 +3,7 @@ package mikey.me.advancedstaff.velocity.listeners;
 import com.velocitypowered.api.proxy.ServerConnection;
 import com.velocitypowered.api.proxy.messages.MinecraftChannelIdentifier;
 import mikey.me.advancedstaff.velocity.messaging.PluginProtocol;
-import mikey.me.advancedstaff.velocity.util.JsonUtil;
+import mikey.me.core.json.JsonUtil;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Map;

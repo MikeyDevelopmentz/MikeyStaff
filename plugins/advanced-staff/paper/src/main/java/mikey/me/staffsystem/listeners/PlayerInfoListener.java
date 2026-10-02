@@ -40,7 +40,7 @@ public class PlayerInfoListener implements Listener {
         if (!isInspectGui(top, title)) {
             return;
         }
-        // always cancel, unclicked empty slots in these guis would eat items otherwise
+        // always cancel, empty slots would eat items otherwise
         event.setCancelled(true);
         ItemStack clicked = event.getCurrentItem();
         if (clicked == null) {

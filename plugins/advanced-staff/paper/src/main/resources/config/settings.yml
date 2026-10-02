@@ -1,4 +1,4 @@
-config-version: 1   # do not edit
+config-version: 1   # don't edit
 
 database:
   host: "localhost"
@@ -24,7 +24,11 @@ features:
     ban-duration-seconds: 3600
     require-forwarding: true
   freeze:
-    default-duration-seconds: 0  # 0 = permanent when no duration is supplied
+    # 0 = permanent, which is probably not what one accidental staff-mode click
+    # should do. use a real duration, like 600 for 10 minutes.
+    default-duration-seconds: 600
+    # used by the staff-mode freeze tool, since it can't ask for a reason
+    default-reason: "frozen by staff"
     send-chat-message: true
     send-command-message: true
     send-title: true
@@ -38,7 +42,7 @@ features:
     log-ips: true
   reports:
     cooldown-seconds: 30
-    same-target-cooldown-seconds: 600  # 10 minutes
+    same-target-cooldown-seconds: 600  # 10 min
 
 permissions:
   punishments:

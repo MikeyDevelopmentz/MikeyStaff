@@ -62,18 +62,6 @@ public class ReportCommand implements CommandExecutor, TabCompleter, Listener {
             reporter.sendMessage(textUtil.prefixed("errors.invalid-usage"));
             return true;
         }
-        OfflinePlayer target = networkPlayerResolver.resolveOfflinePlayer(args[0]);
-        if (target == null) {
-            reporter.sendMessage(textUtil.prefixed("errors.player-not-found"));
-            return true;
-        }
-        if (reporter.getUniqueId().equals(target.getUniqueId())) {
-            reporter.sendMessage(textUtil.prefixed("errors.self-report"));
-            return true;
-        }
-        UUID reporterId = reporter.getUniqueId();
-        UUID reportedId = target.getUniqueId();
-
         long now = System.currentTimeMillis();
         long generalCooldownMs = Math.max(0L, settings.getReportCooldownSeconds() * 1000L);
         long sameTargetCooldownMs = Math.max(0L, settings.getReportSameTargetCooldownSeconds() * 1000L);
@@ -87,6 +75,43 @@ public class ReportCommand implements CommandExecutor, TabCompleter, Listener {
             return true;
         }
 
+        UUID reporterId = reporter.getUniqueId();
+        if (!pendingReports.add(reporterId)) {
+            reporter.sendMessage(ChatColor.YELLOW + "Your last report is still sending, hang on.");
+            return true;
+        }
+        networkPlayerResolver.resolvePlayerId(args[0]).whenComplete((uuid, lookupError) ->
+            Bukkit.getGlobalRegionScheduler().execute(plugin, () -> {
+                if (!reporter.isOnline() || Bukkit.getPlayer(reporterId) != reporter) {
+                    pendingReports.remove(reporterId);
+                    return;
+                }
+                if (lookupError != null) {
+                    pendingReports.remove(reporterId);
+                    reporter.sendMessage(textUtil.prefixed("errors.database-error"));
+                    return;
+                }
+                submitReport(reporter, networkPlayerResolver.getOfflinePlayer(uuid), args);
+            }));
+        return true;
+    }
+
+    private void submitReport(Player reporter, OfflinePlayer target, String[] args) {
+        UUID reporterId = reporter.getUniqueId();
+        String permission = settings.getPermission("reports.report");
+        if (permission != null && !permission.isEmpty() && !reporter.hasPermission(permission)) {
+            pendingReports.remove(reporterId);
+            reporter.sendMessage(textUtil.prefixed("errors.no-permission"));
+            return;
+        }
+        if (target == null || reporterId.equals(target.getUniqueId())) {
+            pendingReports.remove(reporterId);
+            reporter.sendMessage(textUtil.prefixed(target == null ? "errors.player-not-found" : "errors.self-report"));
+            return;
+        }
+        UUID reportedId = target.getUniqueId();
+        long now = System.currentTimeMillis();
+        long sameTargetCooldownMs = Math.max(0L, settings.getReportSameTargetCooldownSeconds() * 1000L);
         String pairKey = reporter.getUniqueId() + ":" + target.getUniqueId();
         Long lastSameTarget = lastReportPerTargetAt.get(pairKey);
         if (lastSameTarget != null && (now - lastSameTarget) < sameTargetCooldownMs) {
@@ -95,7 +120,8 @@ public class ReportCommand implements CommandExecutor, TabCompleter, Listener {
             ph.put("%target_name%", target.getName() == null ? args[0] : target.getName());
             ph.put("%seconds%", String.valueOf(remaining));
             reporter.sendMessage(textUtil.format(textUtil.prefixed("reports.duplicate"), ph));
-            return true;
+            pendingReports.remove(reporterId);
+            return;
         }
 
         StringBuilder builder = new StringBuilder();
@@ -104,11 +130,6 @@ public class ReportCommand implements CommandExecutor, TabCompleter, Listener {
             builder.append(args[i]);
         }
         String reason = builder.toString();
-        if (!pendingReports.add(reporter.getUniqueId())) {
-            reporter.sendMessage(ChatColor.YELLOW + "Your last report is still sending, hang on.");
-            return true;
-        }
-
         String targetName = target.getName() == null ? args[0] : target.getName();
         reportManager.createReport(reporterId, reportedId, reason).whenComplete((report, reportError) ->
             Bukkit.getGlobalRegionScheduler().execute(plugin, () -> {
@@ -148,7 +169,6 @@ public class ReportCommand implements CommandExecutor, TabCompleter, Listener {
                 }
             }));
 
-        return true;
     }
 
     private void pruneCooldowns(long now, long retentionMs) {

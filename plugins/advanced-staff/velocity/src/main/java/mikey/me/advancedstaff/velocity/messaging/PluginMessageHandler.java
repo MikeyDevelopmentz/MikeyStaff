@@ -10,7 +10,7 @@ import com.velocitypowered.api.proxy.server.RegisteredServer;
 import mikey.me.advancedstaff.velocity.database.VelocityDatabaseManager;
 import mikey.me.advancedstaff.velocity.listeners.NetworkPlayerTracker;
 import mikey.me.advancedstaff.velocity.listeners.VersionTracker;
-import mikey.me.advancedstaff.velocity.util.JsonUtil;
+import mikey.me.core.json.JsonUtil;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 
@@ -114,7 +114,8 @@ public class PluginMessageHandler {
             Component component = LegacyComponentSerializer.legacySection().deserialize(reason);
             player.ifPresent(p -> p.disconnect(component));
             if (player.isEmpty() && !relayed) relay.publish(PluginProtocol.CH_KICK, json);
-        } catch (IllegalArgumentException ignored) {
+        } catch (IllegalArgumentException e) {
+             logger.warning("ignoring malformed handleKick payload: " + e.getMessage());
         }
     }
 
@@ -138,7 +139,8 @@ public class PluginMessageHandler {
                 Component component = LegacyComponentSerializer.legacyAmpersand().deserialize(result.message());
                 server.getPlayer(uuid).ifPresent(player -> player.disconnect(component));
             }
-        } catch (IllegalArgumentException ignored) {
+        } catch (IllegalArgumentException e) {
+             logger.warning("ignoring malformed handleBanNotify payload: " + e.getMessage());
         }
     }
 
@@ -149,7 +151,8 @@ public class PluginMessageHandler {
         try {
             tracker.setMute(UUID.fromString(uuidStr), mute);
             broadcast(PluginProtocol.CH_MUTE, json, relayed);
-        } catch (IllegalArgumentException ignored) {
+        } catch (IllegalArgumentException e) {
+             logger.warning("ignoring malformed handleMuteSync payload: " + e.getMessage());
         }
     }
 
@@ -160,7 +163,8 @@ public class PluginMessageHandler {
         try {
             tracker.setVanish(UUID.fromString(uuidStr), vanish);
             broadcast(PluginProtocol.CH_VANISH, json, relayed);
-        } catch (IllegalArgumentException ignored) {
+        } catch (IllegalArgumentException e) {
+             logger.warning("ignoring malformed handleVanishSync payload: " + e.getMessage());
         }
     }
 
@@ -171,7 +175,8 @@ public class PluginMessageHandler {
         try {
             tracker.setFreeze(UUID.fromString(uuidStr), freeze);
             broadcast(PluginProtocol.CH_FREEZE, json, relayed);
-        } catch (IllegalArgumentException ignored) {
+        } catch (IllegalArgumentException e) {
+             logger.warning("ignoring malformed handleFreezeSync payload: " + e.getMessage());
         }
     }
 

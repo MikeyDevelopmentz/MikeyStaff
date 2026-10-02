@@ -19,6 +19,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -35,6 +36,8 @@ public class NetworkPlayerResolver {
     private final Set<String> cachedNetworkPlayerNames = ConcurrentHashMap.newKeySet();
     private final Map<String, UUID> cachedNetworkPlayerIds = new ConcurrentHashMap<>();
     private final Map<UUID, String> cachedNetworkPlayerServers = new ConcurrentHashMap<>();
+    private final Map<UUID, String> cachedPlayerNames = new ConcurrentHashMap<>();
+    private final Set<UUID> pendingNameLookups = ConcurrentHashMap.newKeySet();
     private volatile long lastPlayerListRequestMillis;
     private final Set<String> cachedBannedNames = ConcurrentHashMap.newKeySet();
     private final AtomicBoolean bannedNamesRefreshing = new AtomicBoolean();
@@ -93,16 +96,36 @@ public class NetworkPlayerResolver {
     public String resolveName(UUID uuid, String fallback) {
         String name = Bukkit.getOfflinePlayer(uuid).getName();
         if (name != null) return name;
+        name = cachedPlayerNames.get(uuid);
+        if (name != null) return name;
+        if (pendingNameLookups.add(uuid)) {
+            try {
+                databaseManager.getDbExecutor().execute(() -> {
+                    try {
+                        String stored = findStoredName(uuid);
+                        if (stored != null) cachedPlayerNames.put(uuid, stored);
+                    } finally {
+                        pendingNameLookups.remove(uuid);
+                    }
+                });
+            } catch (RuntimeException e) {
+                pendingNameLookups.remove(uuid);
+            }
+        }
+        return fallback;
+    }
+
+    private String findStoredName(UUID uuid) {
         try (Connection connection = databaseManager.openConnection();
              PreparedStatement statement = connection.prepareStatement(
                  "SELECT username FROM player_names WHERE uuid = ? LIMIT 1")) {
             statement.setString(1, uuid.toString());
             try (ResultSet rs = statement.executeQuery()) {
-                return rs.next() ? rs.getString(1) : fallback;
+                return rs.next() ? rs.getString(1) : null;
             }
         } catch (SQLException e) {
             databaseManager.logSqlFailure("player name lookup", e);
-            return fallback;
+            return null;
         }
     }
 
@@ -126,17 +149,26 @@ public class NetworkPlayerResolver {
         return Bukkit.getPlayer(name);
     }
 
-    public OfflinePlayer resolveOfflinePlayer(String name) {
+    public CompletableFuture<UUID> resolvePlayerId(String name) {
         Player local = Bukkit.getPlayer(name);
-        if (local != null) return local;
+        if (local != null) return CompletableFuture.completedFuture(local.getUniqueId());
         UUID uuid = resolveUUID(name);
-        if (uuid != null) return Bukkit.getOfflinePlayer(uuid);
+        if (uuid != null) return CompletableFuture.completedFuture(uuid);
         // dont hit the mojang api on the main thread for unknown names
         OfflinePlayer cached = Bukkit.getOfflinePlayerIfCached(name);
-        if (cached != null) return cached;
+        if (cached != null) return CompletableFuture.completedFuture(cached.getUniqueId());
         // never been on this server, check the names the proxy saved
-        UUID stored = findStoredUUID(name);
-        return stored == null ? null : Bukkit.getOfflinePlayer(stored);
+        try {
+            return CompletableFuture.supplyAsync(() -> findStoredUUID(name), databaseManager.getDbExecutor());
+        } catch (RuntimeException e) {
+            return CompletableFuture.failedFuture(e);
+        }
+    }
+
+    public OfflinePlayer getOfflinePlayer(UUID uuid) {
+        if (uuid == null) return null;
+        Player local = Bukkit.getPlayer(uuid);
+        return local != null ? local : Bukkit.getOfflinePlayer(uuid);
     }
 
     private UUID findStoredUUID(String name) {
@@ -146,11 +178,14 @@ public class NetworkPlayerResolver {
                  "SELECT uuid FROM player_names WHERE username = ? ORDER BY last_seen DESC LIMIT 1")) {
             statement.setString(1, name);
             try (ResultSet rs = statement.executeQuery()) {
-                return rs.next() ? UUID.fromString(rs.getString("uuid")) : null;
+                if (!rs.next()) return null;
+                UUID uuid = UUID.fromString(rs.getString("uuid"));
+                cachedPlayerNames.put(uuid, name);
+                return uuid;
             }
         } catch (SQLException e) {
             databaseManager.logSqlFailure("player name lookup", e);
-            return null;
+            throw new java.util.concurrent.CompletionException(e);
         }
     }
 
@@ -235,6 +270,7 @@ public class NetworkPlayerResolver {
             names.add(username);
             try {
                 UUID uuid = UUID.fromString(matcher.group(1));
+                cachedPlayerNames.put(uuid, username);
                 ids.put(normalize(username), uuid);
                 servers.put(uuid, matcher.group(3));
             } catch (IllegalArgumentException ignored) {

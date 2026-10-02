@@ -1,6 +1,7 @@
 package mikey.me.staffsystem.placeholder;
 
 import me.clip.placeholderapi.expansion.PlaceholderExpansion;
+import mikey.me.staffsystem.cache.FreezeState;
 import mikey.me.staffsystem.database.models.PlayerNote;
 import mikey.me.staffsystem.managers.FreezeManager;
 import mikey.me.staffsystem.managers.NotesManager;
@@ -86,30 +87,26 @@ public class StaffPlaceholderExpansion extends PlaceholderExpansion {
         if (key.equals("frozen_player")) {
             return freezeManager.isFrozen(player.getUniqueId()) ? player.getName() : "";
         }
-        if (key.equals("frozen_staff")) {
+        // isFrozen() is fail-closed: true for everyone while the manager is down, so read the state map once instead of re-deriving it
+        if (key.equals("frozen_staff") || key.equals("freeze_reason")
+                || key.equals("freeze_time_total") || key.equals("freeze_time_elapsed")) {
             if (!freezeManager.isFrozen(player.getUniqueId())) {
                 return "";
             }
-            return Bukkit.getOfflinePlayer(freezeManager.getFrozen().get(player.getUniqueId()).getStaffUuid()).getName();
-        }
-        if (key.equals("freeze_reason")) {
-            if (!freezeManager.isFrozen(player.getUniqueId())) {
+            FreezeState state = freezeManager.getFrozen().get(player.getUniqueId());
+            if (state == null) {
                 return "";
             }
-            return freezeManager.getFrozen().get(player.getUniqueId()).getReason();
-        }
-        if (key.equals("freeze_time_total")) {
-            if (!freezeManager.isFrozen(player.getUniqueId())) {
-                return "";
+            if (key.equals("frozen_staff")) {
+                return Bukkit.getOfflinePlayer(state.getStaffUuid()).getName();
             }
-            return String.valueOf(freezeManager.getFrozen().get(player.getUniqueId()).getDurationSeconds());
-        }
-        if (key.equals("freeze_time_elapsed")) {
-            if (!freezeManager.isFrozen(player.getUniqueId())) {
-                return "";
+            if (key.equals("freeze_reason")) {
+                return state.getReason();
             }
-            long elapsedMillis = System.currentTimeMillis() - freezeManager.getFrozen().get(player.getUniqueId()).getStartTime();
-            long seconds = elapsedMillis / 1000L;
+            if (key.equals("freeze_time_total")) {
+                return String.valueOf(state.getDurationSeconds());
+            }
+            long seconds = (System.currentTimeMillis() - state.getStartTime()) / 1000L;
             return String.valueOf(seconds);
         }
         if (key.equals("freeze_time_remaining")) {

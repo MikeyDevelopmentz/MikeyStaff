@@ -24,6 +24,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.logging.Logger;
 
@@ -42,6 +43,10 @@ public class NetworkPlayerTracker {
     private final AtomicLong stateVersion = new AtomicLong();
     private final AtomicBoolean refreshRunning = new AtomicBoolean();
     private final Object stateLock = new Object();
+    // mass-kick is a last resort, not for the first hiccup. one transient error used
+    // to disconnect everyone, and since the task repeats it re-kicked reconnecting players forever
+    private final AtomicInteger consecutiveFailures = new AtomicInteger();
+    private volatile long nextDatabaseAttemptAfter;
 
     public NetworkPlayerTracker(ProxyServer server, VelocityDatabaseManager databaseManager,
                                 Logger logger, String sharedSecret) {
@@ -114,11 +119,17 @@ public class NetworkPlayerTracker {
         }
     }
 
+    private static final int FAILURES_BEFORE_MASS_KICK = 3;
+    private static final long DATABASE_COOLDOWN_MILLIS = 30_000L;
+
     public void enforceOnlinePlayers() {
         if (!refreshRunning.compareAndSet(false, true)) {
             return;
         }
         try {
+            if (System.currentTimeMillis() < nextDatabaseAttemptAfter) {
+                return;
+            }
             List<UUID> onlineIds = new ArrayList<>();
             long versionAtStart;
             synchronized (stateLock) {
@@ -137,9 +148,15 @@ public class NetworkPlayerTracker {
             Map<UUID, VelocityDatabaseManager.ModerationState> states;
             try {
                 states = databaseManager.loadModerationStates(onlineIds);
+                consecutiveFailures.set(0);
             } catch (Exception e) {
-                logger.warning("Failed to refresh online moderation state: " + e.getMessage());
-                disconnectAllForDatabaseFailure();
+                int failures = consecutiveFailures.incrementAndGet();
+                logger.warning("Failed to refresh online moderation state (failure " + failures
+                        + "/" + FAILURES_BEFORE_MASS_KICK + "): " + e.getMessage());
+                nextDatabaseAttemptAfter = System.currentTimeMillis() + DATABASE_COOLDOWN_MILLIS;
+                if (failures >= FAILURES_BEFORE_MASS_KICK) {
+                    disconnectAllForDatabaseFailure();
+                }
                 return;
             }
 
@@ -228,15 +245,32 @@ public class NetworkPlayerTracker {
     }
 
     private void sendStateToCurrentServer(Player player, String channel, UUID uuid, boolean state) {
+        String key = stateKey(channel);
+        if (key == null) {
+            logger.warning("Not sending moderation state for unknown channel " + channel);
+            return;
+        }
         player.getCurrentServer().ifPresent(connection -> sendToServer(connection.getServer(), channel,
-                "{\"target_uuid\":\"" + uuid + "\",\"" + stateKey(channel) + "\":" + state + "}"));
+                "{\"target_uuid\":\"" + uuid + "\",\"" + key + "\":" + state + "}"));
     }
 
+    // json key the paper side reads per channel. must cover every state channel and never
+    // fall back to a default: paper reads "vanished"/"frozen" for those, so defaulting a new
+    // channel to "banned" would silently un-vanish and un-freeze that player on every backend
     private String stateKey(String channel) {
         if (PluginProtocol.CH_MUTE.equals(channel)) {
             return "muted";
         }
-        return "banned";
+        if (PluginProtocol.CH_BAN_NOTIFY.equals(channel)) {
+            return "banned";
+        }
+        if (PluginProtocol.CH_VANISH.equals(channel)) {
+            return "vanished";
+        }
+        if (PluginProtocol.CH_FREEZE.equals(channel)) {
+            return "frozen";
+        }
+        return null;
     }
 
     private void sendToServer(RegisteredServer server, String channel, String json) {

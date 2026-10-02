@@ -1,14 +1,19 @@
 package mikey.me.staffsystem.config;
 
+import mikey.me.core.registry.CoreRegistry;
+import org.bukkit.Bukkit;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.plugin.Plugin;
 
 import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
 
 public class ConfigurationManager {
 
     private final Plugin plugin;
+    private final CoreRegistry.PluginData data;
     private SettingsConfig settingsConfig;
     private MessagesConfig messagesConfig;
     private ItemsConfig itemsConfig;
@@ -16,6 +21,11 @@ public class ConfigurationManager {
 
     public ConfigurationManager(Plugin plugin) {
         this.plugin = plugin;
+        Plugin core = Bukkit.getPluginManager().getPlugin("MikeyCore");
+        if (core != null) {
+            CoreRegistry.init(core.getDataFolder().toPath());
+        }
+        this.data = CoreRegistry.register("staff");
         ensureDefaults();
         loadAll();
     }
@@ -48,15 +58,14 @@ public class ConfigurationManager {
     }
 
     private void ensureDefault(String resourcePath) {
-        File dataFolder = plugin.getDataFolder();
-        File configFolder = new File(dataFolder, "config");
-        if (!configFolder.exists()) {
-            configFolder.mkdirs();
-        }
         String fileName = resourcePath.substring(resourcePath.lastIndexOf('/') + 1);
-        File target = new File(configFolder, fileName);
-        if (!target.exists()) {
-            plugin.saveResource(resourcePath, false);
+        try {
+            data.copyIfAbsent(fileName, plugin.getDataFolder().toPath().resolve("config").resolve(fileName));
+            try (InputStream in = plugin.getResource(resourcePath)) {
+                data.saveDefault(fileName, in);
+            }
+        } catch (IOException e) {
+            throw new IllegalStateException("couldnt write " + fileName, e);
         }
     }
 
@@ -75,7 +84,7 @@ public class ConfigurationManager {
     }
 
     private FileConfiguration load(String name) {
-        File file = new File(new File(plugin.getDataFolder(), "config"), name);
+        File file = data.file(name).toFile();
         YamlConfiguration config = YamlConfiguration.loadConfiguration(file);
         // fall back to the shipped defaults so old configs dont break after updates
         java.io.InputStream resource = plugin.getResource("config/" + name);

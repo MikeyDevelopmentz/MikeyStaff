@@ -4,10 +4,11 @@ import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
 import mikey.me.core.persistence.ActivePunishmentPolicy;
 import mikey.me.core.persistence.DatabaseConfig;
+import mikey.me.core.persistence.YamlFile;
+import mikey.me.core.registry.CoreRegistry;
 
-import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.InputStream;
+import java.io.Reader;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -16,8 +17,8 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.util.Collection;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -44,11 +45,12 @@ public class VelocityDatabaseManager {
 
     public void initialize(Path configFile) throws Exception {
         Properties props = new Properties();
-        try (InputStream in = new FileInputStream(configFile.toFile())) {
+        // saveProxyId rewrites this file as utf-8, so read with a utf-8 Reader;
+        // otherwise a non-ascii shared-secret changes across boots (it's the hmac key)
+        try (Reader in = Files.newBufferedReader(configFile, StandardCharsets.UTF_8)) {
             props.load(in);
         }
         sharedSecret = props.getProperty("network.shared-secret", "");
-        if (sharedSecret == null) sharedSecret = "";
         enforcementIntervalSeconds = readInterval(props.getProperty("database.enforcement-interval-seconds", "5"));
         proxyId = props.getProperty("network.proxy-id", "").trim();
         if (proxyId.isEmpty()) {
@@ -58,27 +60,31 @@ public class VelocityDatabaseManager {
             proxyId = proxyId.substring(0, 64);
         }
 
-        HikariConfig config = new HikariConfig();
-        String jdbcUrl = props.getProperty("database.jdbc-url", "").trim();
-        if (jdbcUrl.isEmpty()) {
-            jdbcUrl = "jdbc:mysql://"
-                + props.getProperty("database.host", "localhost")
-                + ":" + props.getProperty("database.port", "3306")
-                + "/" + props.getProperty("database.database", "advancedstaff")
-                + "?useSSL=false&characterEncoding=utf8";
+        CoreRegistry.PluginData staff = CoreRegistry.register("staff");
+        if (!Files.exists(staff.file("database.yml"))) {
+            Map<String, Object> db = new HashMap<>();
+            db.put("host", props.getProperty("database.host", "localhost"));
+            db.put("port", Integer.parseInt(props.getProperty("database.port", "3306")));
+            db.put("database", props.getProperty("database.database", "advancedstaff"));
+            db.put("user", props.getProperty("database.user", "root"));
+            db.put("password", props.getProperty("database.password", ""));
+            db.put("pool-size", Integer.parseInt(props.getProperty("database.pool-size", "5")));
+            db.put("jdbc-url", props.getProperty("database.jdbc-url", ""));
+            YamlFile.write(staff.file("database.yml"), db);
         }
-        DatabaseConfig databaseConfig = new DatabaseConfig(jdbcUrl,
-                props.getProperty("database.user", "root"),
-                props.getProperty("database.password", ""),
-                Integer.parseInt(props.getProperty("database.pool-size", "5")),
-                "AdvancedStaff-Velocity-Pool");
+        DatabaseConfig databaseConfig = staff.database("AdvancedStaff-Velocity-Pool");
+        HikariConfig config = new HikariConfig();
         config.setJdbcUrl(databaseConfig.jdbcUrl());
         config.setUsername(databaseConfig.username());
         config.setPassword(databaseConfig.password());
         config.setMaximumPoolSize(databaseConfig.maximumPoolSize());
         config.setPoolName(databaseConfig.poolName());
-        // hikari waits 30s by default, same as the velocity read timeout
+        // connectionTimeout only bounds pool waits; without socketTimeout a hung connect
+        // or stalled query blocks the caller forever, so set both (event thread must never hang)
         config.setConnectionTimeout(5_000L);
+        config.setValidationTimeout(3_000L);
+        // socketTimeout is a connector/J property, not a Hikari one.
+        config.addDataSourceProperty("socketTimeout", "10000");
         config.setDriverClassName("com.mysql.cj.jdbc.Driver");
         dataSource = new HikariDataSource(config);
         createSchemaIfNeeded();
@@ -257,8 +263,8 @@ public class VelocityDatabaseManager {
                 "source_proxy VARCHAR(64) NOT NULL, " +
                 "channel VARCHAR(64) NOT NULL, " +
                 "payload MEDIUMTEXT NOT NULL, " +
-                "created_at BIGINT NOT NULL, " +
-                "KEY idx_network_messages_created (created_at))");
+                "created_at BIGINT NOT NULL)");
+            ensureIndex(connection, "network_messages", "idx_network_messages_created", "created_at");
 
             statement.executeUpdate(
                 "CREATE TABLE IF NOT EXISTS player_names (" +
@@ -282,14 +288,15 @@ public class VelocityDatabaseManager {
                 }
             }
         } catch (SQLException e) {
-            logger.warning("Index check failed for " + indexName + ": " + e.getMessage());
-            return;
+            // don't swallow this: a missing privilege used to leave the index uncreated
+            // and startup still reported success, turning a per-second query into a full table scan
+            throw new IllegalStateException("Index check failed for " + indexName, e);
         }
         try (Statement statement = connection.createStatement()) {
             statement.executeUpdate("CREATE INDEX " + indexName + " ON " + table + " (" + columns + ")");
         } catch (SQLException e) {
             if (e.getErrorCode() != 1061) {
-                logger.warning("Failed to create index " + indexName + ": " + e.getMessage());
+                throw new IllegalStateException("Failed to create index " + indexName, e);
             }
         }
     }
@@ -307,14 +314,13 @@ public class VelocityDatabaseManager {
                 }
             }
         } catch (SQLException e) {
-            logger.warning("Column check failed for " + table + "." + column + ": " + e.getMessage());
-            return;
+            throw new IllegalStateException("Column check failed for " + table + "." + column, e);
         }
         try (Statement statement = connection.createStatement()) {
             statement.executeUpdate("ALTER TABLE " + table + " ADD COLUMN " + column + " " + definition);
         } catch (SQLException e) {
             if (e.getErrorCode() != 1060) {
-                logger.warning("Failed to add column " + table + "." + column + ": " + e.getMessage());
+                throw new IllegalStateException("Failed to add column " + table + "." + column, e);
             }
         }
     }

@@ -34,8 +34,7 @@ public class FreezeListCommand implements CommandExecutor, TabCompleter {
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
-        String permission = settings.getPermission("freeze.list");
-        if (!sender.hasPermission(permission)) {
+        if (!settings.permits(sender, "freeze.list")) {
             sender.sendMessage(textUtil.prefixed("errors.no-permission"));
             return true;
         }

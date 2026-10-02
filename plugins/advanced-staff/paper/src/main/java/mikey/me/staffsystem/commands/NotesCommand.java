@@ -52,8 +52,7 @@ public class NotesCommand implements CommandExecutor, TabCompleter {
             return true;
         }
         Player staff = (Player) sender;
-        String permission = settings.getPermission("notes.view");
-        if (!staff.hasPermission(permission)) {
+        if (!settings.permits(staff, "notes.view")) {
             staff.sendMessage(textUtil.prefixed("errors.no-permission"));
             return true;
         }
@@ -146,8 +145,7 @@ public class NotesCommand implements CommandExecutor, TabCompleter {
             return result;
         }
         Player staff = (Player) sender;
-        String permission = settings.getPermission("notes.view");
-        if (!staff.hasPermission(permission)) {
+        if (!settings.permits(staff, "notes.view")) {
             return result;
         }
         if (args.length == 1) {

@@ -34,8 +34,7 @@ public class VanishCommand implements CommandExecutor, TabCompleter {
         }
         Player player = (Player) sender;
         if (args.length == 0) {
-            String permission = settings.getPermission("vanish.self");
-            if (!player.hasPermission(permission)) {
+            if (!settings.permits(player, "vanish.self")) {
                 player.sendMessage(textUtil.prefixed("errors.no-permission"));
                 return true;
             }
@@ -44,8 +43,7 @@ public class VanishCommand implements CommandExecutor, TabCompleter {
             player.sendMessage(textUtil.prefixed(key));
             return true;
         }
-        String permission = settings.getPermission("vanish.other");
-        if (!player.hasPermission(permission)) {
+        if (!settings.permits(player, "vanish.other")) {
             player.sendMessage(textUtil.prefixed("errors.no-permission"));
             return true;
         }

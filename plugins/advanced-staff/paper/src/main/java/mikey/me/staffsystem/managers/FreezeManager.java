@@ -7,7 +7,7 @@ import mikey.me.staffsystem.config.SettingsConfig;
 import mikey.me.staffsystem.database.models.FreezeLog;
 import mikey.me.staffsystem.database.repositories.FreezeLogRepository;
 import mikey.me.staffsystem.messaging.VelocityMessenger;
-import mikey.me.staffsystem.utils.JsonUtil;
+import mikey.me.core.json.JsonUtil;
 import mikey.me.staffsystem.utils.NetworkPlayerResolver;
 import mikey.me.staffsystem.utils.SchedulerProvider;
 import mikey.me.staffsystem.utils.TextUtil;
@@ -649,10 +649,16 @@ public class FreezeManager {
     }
 
     private void handleFreezeSync(String json) {
+        String uuidStr = JsonUtil.extractString(json, "target_uuid");
+        UUID uuid = parseUuidOrNull(uuidStr);
+        if (uuid == null) {
+            // bad payload (version skew or bug), not a db failure. never markUnavailable() here,
+            // that would fail closed for everyone and one bad msg freezes the whole server
+            Bukkit.getLogger().warning("[Staff] ignoring malformed freeze sync, bad target_uuid: " + uuidStr);
+            return;
+        }
         try {
-            String uuidStr = JsonUtil.extractString(json, "target_uuid");
             boolean freeze = JsonUtil.extractBool(json, "frozen", false);
-            UUID uuid = UUID.fromString(uuidStr);
             if (!freeze) {
                 String staffValue = JsonUtil.extractString(json, "staff_uuid");
                 long startTime = JsonUtil.extractLong(json, "start_time", -1L);
@@ -695,13 +701,16 @@ public class FreezeManager {
                 try {
                     schedulerProvider.runSync(() -> applySyncedLog(uuid, log));
                 } catch (RuntimeException e) {
-                    markUnavailable();
+                    // scheduling failure, not a db failure. don't fail closed
                     Bukkit.getLogger().warning(
                             "[Staff] failed to apply synced freeze for " + uuid + ": " + e.getMessage());
                 }
             });
         } catch (Exception e) {
-            markUnavailable();
+            // markUnavailable() is only for real db failures; it's irreversible and then
+            // isFrozen() is true for everyone server-wide, cancelling movement/interaction/commands.
+            // everything reachable here is parsing/scheduling on an already-validated payload,
+            // so a bad message must never end up here.
             Bukkit.getLogger().warning("[Staff] failed to handle synced freeze state: " + e.getMessage());
         }
     }

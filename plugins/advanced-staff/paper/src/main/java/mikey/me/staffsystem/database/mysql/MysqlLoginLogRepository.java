@@ -27,7 +27,9 @@ public class MysqlLoginLogRepository implements LoginLogRepository {
                 statement.setLong(3, loginTime);
                 statement.executeUpdate();
             } catch (SQLException e) {
+                // rethrow so caller sees failure; swallowing made logs silently disappear
                 databaseManager.logSqlFailure("insert login log", e);
+                throw new java.util.concurrent.CompletionException(e);
             }
         }, databaseManager.getDbExecutor());
     }

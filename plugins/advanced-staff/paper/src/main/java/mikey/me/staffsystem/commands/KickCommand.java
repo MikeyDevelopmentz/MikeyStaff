@@ -39,8 +39,7 @@ public class KickCommand implements CommandExecutor, TabCompleter {
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
-        String permission = settings.getPermission("punishments.kick");
-        if (sender instanceof Player && !sender.hasPermission(permission)) {
+        if (!settings.permits(sender, "punishments.kick")) {
             sender.sendMessage(textUtil.prefixed("errors.no-permission"));
             return true;
         }
@@ -49,7 +48,23 @@ public class KickCommand implements CommandExecutor, TabCompleter {
             return true;
         }
         String staffName = sender instanceof Player ? ((Player) sender).getName() : "CONSOLE";
-        OfflinePlayer target = networkPlayerResolver.resolveOfflinePlayer(args[0]);
+        networkPlayerResolver.resolvePlayerId(args[0]).whenComplete((uuid, lookupError) ->
+            schedulerProvider.runSync(() -> {
+                if (sender instanceof Player player && (!player.isOnline() || Bukkit.getPlayer(player.getUniqueId()) != player)) return;
+                if (lookupError != null) {
+                    sender.sendMessage(textUtil.prefixed("errors.database-error"));
+                    return;
+                }
+                execute(sender, networkPlayerResolver.getOfflinePlayer(uuid), args, staffName);
+            }));
+        return true;
+    }
+
+    private boolean execute(CommandSender sender, OfflinePlayer target, String[] args, String staffName) {
+        if (!settings.permits(sender, "punishments.kick")) {
+            sender.sendMessage(textUtil.prefixed("errors.no-permission"));
+            return true;
+        }
         if (target == null
                 || (!(target instanceof Player)
                     && !networkPlayerResolver.isKnownPlayerName(args[0]))) {

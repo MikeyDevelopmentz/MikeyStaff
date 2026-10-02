@@ -1,11 +1,14 @@
 package mikey.me.staffsystem.config;
 
 import mikey.me.core.communication.CommunicationMode;
+import org.bukkit.command.CommandSender;
 import org.bukkit.configuration.file.FileConfiguration;
+import org.bukkit.entity.Player;
 
 public class SettingsConfig {
 
-    private FileConfiguration config;
+    // volatile: reload writes on main thread, readers are async threads - avoids stale refs
+    private volatile FileConfiguration config;
     private CommunicationMode communicationMode;
 
     public SettingsConfig(FileConfiguration config) {
@@ -16,6 +19,14 @@ public class SettingsConfig {
     // swap in place on reload so anything holding this sees new values
     void reload(FileConfiguration config) {
         this.config = config;
+        // communicationMode is cached once (VelocityMessenger), so a changed
+        // network.mode needs a restart - warn instead of pretending the reload worked
+        CommunicationMode next = readCommunicationMode(config);
+        if (next != this.communicationMode) {
+            java.util.logging.Logger.getLogger("AdvancedStaff").warning(
+                    "network.mode changed from " + this.communicationMode + " to " + next
+                            + " but it is read once at startup, so a restart is required");
+        }
     }
 
     public String getDbHost() {
@@ -91,7 +102,13 @@ public class SettingsConfig {
     }
 
     public int getFreezeDefaultDurationSeconds() {
-        return config.getInt("features.freeze.default-duration-seconds");
+        // real default so an unset/misspelled key cant silently mean "permanent"
+        return config.getInt("features.freeze.default-duration-seconds", 600);
+    }
+
+    // used by staff-mode freeze tool, which cant take a reason at runtime
+    public String getFreezeDefaultReason() {
+        return config.getString("features.freeze.default-reason", "");
     }
 
     public boolean isFreezeChatMessageEnabled() {
@@ -141,5 +158,16 @@ public class SettingsConfig {
     public String getPermission(String path) {
         // fall back so a missing node cant NPE hasPermission
         return config.getString("permissions." + path, "staff." + path);
+    }
+
+    // the one permission check for commands. empty node = unrestricted (same as the old
+    // applyCommandPermissions/TabCompletion/freeze/inspect checks). passing "" to
+    // hasPermission reported "no permission" while tab completion still showed args.
+    public boolean permits(CommandSender sender, String path) {
+        if (!(sender instanceof Player)) {
+            return true;
+        }
+        String permission = getPermission(path);
+        return permission.isEmpty() || sender.hasPermission(permission);
     }
 }

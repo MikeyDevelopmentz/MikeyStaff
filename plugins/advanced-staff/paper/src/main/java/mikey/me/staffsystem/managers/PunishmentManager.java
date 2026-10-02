@@ -5,7 +5,7 @@ import mikey.me.staffsystem.config.SettingsConfig;
 import mikey.me.staffsystem.database.models.PunishmentLog;
 import mikey.me.staffsystem.database.repositories.PunishmentLogRepository;
 import mikey.me.staffsystem.messaging.VelocityMessenger;
-import mikey.me.staffsystem.utils.JsonUtil;
+import mikey.me.core.json.JsonUtil;
 import mikey.me.staffsystem.utils.NetworkPlayerResolver;
 import mikey.me.staffsystem.utils.SchedulerProvider;
 import mikey.me.staffsystem.utils.TextUtil;

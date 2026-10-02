@@ -3,7 +3,7 @@ package mikey.me.staffsystem.managers;
 import mikey.me.staffsystem.config.ConfigurationManager;
 import mikey.me.staffsystem.config.SettingsConfig;
 import mikey.me.staffsystem.messaging.VelocityMessenger;
-import mikey.me.staffsystem.utils.JsonUtil;
+import mikey.me.core.json.JsonUtil;
 import mikey.me.staffsystem.utils.SchedulerProvider;
 import mikey.me.staffsystem.utils.TextUtil;
 import org.bukkit.Bukkit;
@@ -76,8 +76,10 @@ public class StaffChatManager {
             return;
         }
         String permission = notice ? JsonUtil.extractString(payload, "permission") : settings.getPermission("staffchat");
+        // empty means unrestricted here too; it used to also require `notice &&`, so permissions.staffchat = ""
+        // made /staffchat look like it worked but reached nobody, since hasPermission("") is false
         for (Player online : Bukkit.getOnlinePlayers()) {
-            if ((notice && permission.isEmpty()) || online.hasPermission(permission)) {
+            if (permission.isEmpty() || online.hasPermission(permission)) {
                 online.sendMessage(rendered);
             }
         }

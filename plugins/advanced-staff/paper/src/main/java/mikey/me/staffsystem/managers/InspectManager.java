@@ -209,7 +209,7 @@ public class InspectManager {
                 + (maxPage + 1) + ")";
         Inventory inv = StaffMenuHolder.create(54, title);
 
-        ItemStack filler = createItem(Material.GRAY_STAINED_GLASS_PANE, ChatColor.DARK_GRAY + "", null);
+        ItemStack filler = createItem(Material.GRAY_STAINED_GLASS_PANE, ChatColor.DARK_GRAY.toString(), null);
         for (int i = 0; i < inv.getSize(); i++) {
             inv.setItem(i, filler);
         }
@@ -509,7 +509,7 @@ public class InspectManager {
         String title = MAIN_MENU_TITLE + target.getName();
         Inventory inv = StaffMenuHolder.create(54, title);
 
-        ItemStack filler = createItem(Material.BLACK_STAINED_GLASS_PANE, ChatColor.DARK_GRAY + "", null);
+        ItemStack filler = createItem(Material.BLACK_STAINED_GLASS_PANE, ChatColor.DARK_GRAY.toString(), null);
         for (int i = 0; i < inv.getSize(); i++) {
             inv.setItem(i, filler);
         }
@@ -571,7 +571,7 @@ public class InspectManager {
                 + (maxPage + 1) + ")";
         Inventory inv = StaffMenuHolder.create(54, title);
 
-        ItemStack filler = createItem(Material.GRAY_STAINED_GLASS_PANE, ChatColor.DARK_GRAY + "", null);
+        ItemStack filler = createItem(Material.GRAY_STAINED_GLASS_PANE, ChatColor.DARK_GRAY.toString(), null);
         for (int i = 0; i < inv.getSize(); i++) {
             inv.setItem(i, filler);
         }
@@ -620,7 +620,7 @@ public class InspectManager {
                 if (altUUIDs.isEmpty()) {
                     String title = ALT_ACCOUNTS_TITLE + target.getName();
                     Inventory inv = StaffMenuHolder.create(54, title);
-                    ItemStack filler = createItem(Material.GRAY_STAINED_GLASS_PANE, ChatColor.DARK_GRAY + "", null);
+                    ItemStack filler = createItem(Material.GRAY_STAINED_GLASS_PANE, ChatColor.DARK_GRAY.toString(), null);
                     for (int i = 0; i < inv.getSize(); i++) {
                         inv.setItem(i, filler);
                     }
@@ -645,7 +645,7 @@ public class InspectManager {
                 + (maxPage + 1) + ")";
         Inventory inv = StaffMenuHolder.create(54, title);
 
-        ItemStack filler = createItem(Material.GRAY_STAINED_GLASS_PANE, ChatColor.DARK_GRAY + "", null);
+        ItemStack filler = createItem(Material.GRAY_STAINED_GLASS_PANE, ChatColor.DARK_GRAY.toString(), null);
         for (int i = 0; i < inv.getSize(); i++) {
             inv.setItem(i, filler);
         }
@@ -917,7 +917,7 @@ public class InspectManager {
                 + (maxPage + 1) + ")";
         Inventory inv = StaffMenuHolder.create(54, title);
 
-        ItemStack filler = createItem(Material.GRAY_STAINED_GLASS_PANE, ChatColor.DARK_GRAY + "", null);
+        ItemStack filler = createItem(Material.GRAY_STAINED_GLASS_PANE, ChatColor.DARK_GRAY.toString(), null);
         for (int i = 0; i < inv.getSize(); i++) {
             inv.setItem(i, filler);
         }

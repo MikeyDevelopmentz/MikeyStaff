@@ -29,8 +29,7 @@ public class ReportsGuiListener implements Listener {
         String title = event.getView().getTitle();
         ItemStack clicked = event.getCurrentItem();
 
-        // cancel before anything else, the confirm gui has empty slots
-        // and an uncancelled click dumps the cursor item into a throwaway inv
+        // cancel first, empty slots would eat the cursor item
         if (title.startsWith(org.bukkit.ChatColor.DARK_AQUA + "Reports")) {
             event.setCancelled(true);
             if (clicked != null) {

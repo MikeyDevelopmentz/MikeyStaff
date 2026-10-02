@@ -1,2 +1,14 @@
-# Auto detect text files and perform LF normalization
-* text=auto
+# Normalise line endings so a file's line endings do not depend on each clone's core.autocrlf.
+# Without this, every future diff in a CRLF file is a whole-file diff.
+* text=auto eol=lf
+
+# Windows scripts must keep CRLF.
+*.bat text eol=crlf
+*.cmd text eol=crlf
+
+# Binary
+*.jar binary
+*.zip binary
+*.png binary
+*.jpg binary
+*.class binary

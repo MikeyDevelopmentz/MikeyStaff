@@ -24,7 +24,7 @@ public class PlayerIPLogListener implements Listener {
         this.ipManager = ipManager;
     }
 
-    // grab the real ip here, its the same source the alt check uses
+    // real ip here, same source as the alt check
     @EventHandler(priority = EventPriority.LOWEST)
     public void onPreLogin(AsyncPlayerPreLoginEvent event) {
         UUID uuid = event.getUniqueId();

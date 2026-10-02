@@ -1,6 +1,6 @@
 package mikey.me.staffsystem.messaging;
 
-import mikey.me.staffsystem.utils.JsonUtil;
+import mikey.me.core.json.JsonUtil;
 import org.junit.jupiter.api.Test;
 
 import javax.crypto.Mac;

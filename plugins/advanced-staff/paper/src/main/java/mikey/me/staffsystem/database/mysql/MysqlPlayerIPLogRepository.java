@@ -29,7 +29,9 @@ public class MysqlPlayerIPLogRepository implements PlayerIPLogRepository {
                 statement.setLong(4, timestamp);
                 statement.executeUpdate();
             } catch (SQLException e) {
+                // rethrow so caller sees failure; swallowing made logs silently disappear
                 databaseManager.logSqlFailure("log player ip", e);
+                throw new java.util.concurrent.CompletionException(e);
             }
         }, databaseManager.getDbExecutor());
     }

@@ -5,7 +5,7 @@ import mikey.me.core.communication.CommunicationMode;
 import mikey.me.core.communication.LocalCommunication;
 import mikey.me.staffsystem.config.SettingsConfig;
 import mikey.me.staffsystem.database.DatabaseManager;
-import mikey.me.staffsystem.utils.JsonUtil;
+import mikey.me.core.json.JsonUtil;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.Plugin;
@@ -163,7 +163,11 @@ public class VelocityMessenger implements PluginMessageListener {
     }
 
     public void flush() {
-        if (mode == CommunicationMode.PAPER || queue.isEmpty()) return;
+        // queue.isEmpty() touches ArrayDeque internals and enqueue can run from the db pool, so lock it too
+        if (mode == CommunicationMode.PAPER) return;
+        synchronized (queue) {
+            if (queue.isEmpty()) return;
+        }
         String secret = settings.getVelocitySharedSecret();
         if (secret == null || secret.isBlank()) {
             logQueueLoss("queued", "remains queued because network.shared-secret is blank");

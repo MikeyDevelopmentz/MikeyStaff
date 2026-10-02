@@ -187,7 +187,7 @@ public class StaffSystemPlugin extends JavaPlugin {
 
     private void registerCommands() {
         if (getCommand("staffmode") != null) {
-            StaffModeCommand staffModeCommand = new StaffModeCommand(configurationManager, staffModeManager, vanishManager, textUtil);
+            StaffModeCommand staffModeCommand = new StaffModeCommand(configurationManager, staffModeManager, vanishManager, textUtil, this::applyCommandPermissions);
             getCommand("staffmode").setExecutor(staffModeCommand);
             getCommand("staffmode").setTabCompleter(staffModeCommand);
         }
@@ -320,6 +320,7 @@ public class StaffSystemPlugin extends JavaPlugin {
             }
             command.setPermission(nodes == null ? null : nodes.toString());
         }
+        Bukkit.getOnlinePlayers().forEach(player -> schedulerProvider.runOn(player, player::updateCommands));
     }
 
     private void shutdownManagers() {

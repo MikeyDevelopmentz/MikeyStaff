@@ -35,8 +35,7 @@ public class StaffChatCommand implements CommandExecutor, TabCompleter {
             player.sendMessage(textUtil.prefixed("staffchat.disabled"));
             return true;
         }
-        String permission = settings.getPermission("staffchat");
-        if (!player.hasPermission(permission)) {
+        if (!settings.permits(player, "staffchat")) {
             player.sendMessage(textUtil.prefixed("errors.no-permission"));
             return true;
         }

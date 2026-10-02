@@ -3,6 +3,8 @@ package mikey.me.staffsystem.database;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
 import mikey.me.core.persistence.DatabaseConfig;
+import mikey.me.core.persistence.YamlFile;
+import mikey.me.core.registry.CoreRegistry;
 import mikey.me.staffsystem.config.ConfigurationManager;
 import mikey.me.staffsystem.config.SettingsConfig;
 import mikey.me.staffsystem.database.mysql.*;
@@ -39,14 +41,22 @@ public class DatabaseManager {
     }
 
     public void initialize() {
-        serverId = ServerIdentity.load(plugin.getDataFolder().toPath());
+        CoreRegistry.PluginData data = CoreRegistry.register("staff");
+        try {
+            data.copyIfAbsent("server-id.txt", plugin.getDataFolder().toPath().resolve("server-id.txt"));
+            seedDatabase(data);
+        } catch (java.io.IOException e) {
+            throw new IllegalStateException("couldnt set up staff files", e);
+        }
+        serverId = ServerIdentity.load(data.folder());
         HikariConfig config = new HikariConfig();
         // autoReconnect is broken with pools, hikari handles dead connections itself
-        String jdbcUrl = "jdbc:mysql://" + settings.getDbHost() + ":" + settings.getDbPort()
-                + "/" + settings.getDbDatabase()
-                + "?useSSL=false&characterEncoding=utf8";
-        DatabaseConfig databaseConfig = new DatabaseConfig(jdbcUrl, settings.getDbUser(), settings.getDbPassword(),
-                settings.getDbPoolSize(), "AdvancedStaff-Pool");
+        DatabaseConfig databaseConfig;
+        try {
+            databaseConfig = data.database("AdvancedStaff-Pool");
+        } catch (java.io.IOException e) {
+            throw new IllegalStateException("couldnt read database.yml", e);
+        }
         config.setJdbcUrl(databaseConfig.jdbcUrl());
         config.setUsername(databaseConfig.username());
         config.setPassword(databaseConfig.password());
@@ -55,6 +65,21 @@ public class DatabaseManager {
         config.setConnectionTimeout(5_000L);
         dataSource = new HikariDataSource(config);
         createSchemaIfNeeded();
+    }
+
+    private void seedDatabase(CoreRegistry.PluginData data) throws java.io.IOException {
+        if (java.nio.file.Files.exists(data.file("database.yml"))) {
+            return;
+        }
+        java.util.Map<String, Object> map = new java.util.LinkedHashMap<>();
+        map.put("host", settings.getDbHost());
+        map.put("port", settings.getDbPort());
+        map.put("database", settings.getDbDatabase());
+        map.put("user", settings.getDbUser());
+        map.put("password", settings.getDbPassword());
+        map.put("pool-size", settings.getDbPoolSize());
+        map.put("jdbc-url", "");
+        YamlFile.write(data.file("database.yml"), map);
     }
 
     public void shutdown() {
@@ -85,7 +110,8 @@ public class DatabaseManager {
     }
 
     public void logSqlFailure(String action, SQLException exception) {
-        plugin.getLogger().warning(action + ": " + exception.getMessage());
+        // pass the throwable so the stack trace survives, getMessage() alone made sql failures undiagnosable
+        plugin.getLogger().log(java.util.logging.Level.WARNING, action + " failed", exception);
     }
 
     public FreezeLogRepository createFreezeLogRepository() {
@@ -162,10 +188,10 @@ public class DatabaseManager {
                 "id BIGINT AUTO_INCREMENT PRIMARY KEY, " +
                 "staff_uuid VARCHAR(36) NOT NULL, server_id VARCHAR(36), " +
                 "start_time BIGINT, end_time BIGINT, serialized_inventory MEDIUMTEXT)");
-             ensureStaffSessionServerId(connection);
-             ensureIndex(connection, "staff_sessions", "idx_staff_sessions_staff", "staff_uuid");
-             ensureIndex(connection, "staff_sessions", "idx_staff_sessions_open", "staff_uuid, end_time, id");
-             ensureIndex(connection, "staff_sessions", "idx_staff_sessions_server", "staff_uuid, server_id, end_time, id");
+            ensureStaffSessionServerId(connection);
+            ensureIndex(connection, "staff_sessions", "idx_staff_sessions_staff", "staff_uuid");
+            ensureIndex(connection, "staff_sessions", "idx_staff_sessions_open", "staff_uuid, end_time, id");
+            ensureIndex(connection, "staff_sessions", "idx_staff_sessions_server", "staff_uuid, server_id, end_time, id");
 
             statement.executeUpdate(
                 "CREATE TABLE IF NOT EXISTS player_ip_logs (" +
@@ -188,6 +214,23 @@ public class DatabaseManager {
                 "server_name VARCHAR(64) NOT NULL, " +
                 "joined_at BIGINT NOT NULL)");
             ensureIndex(connection, "network_players", "idx_network_players_username", "username");
+            // must match velocity's definition or its "proxy_id = ''" cleanup matches nothing
+            ensureColumn(connection, "network_players", "proxy_id", "VARCHAR(64) NOT NULL DEFAULT ''");
+
+            // created by the velocity module but used by the relay, without it the relay silently degrades to in-memory and isOnNetwork() always reports false
+            statement.executeUpdate(
+                "CREATE TABLE IF NOT EXISTS network_proxies (" +
+                "proxy_id VARCHAR(64) PRIMARY KEY, " +
+                "last_seen BIGINT NOT NULL)");
+
+            statement.executeUpdate(
+                "CREATE TABLE IF NOT EXISTS network_messages (" +
+                "id BIGINT AUTO_INCREMENT PRIMARY KEY, " +
+                "source_proxy VARCHAR(64) NOT NULL, " +
+                "channel VARCHAR(64) NOT NULL, " +
+                "payload MEDIUMTEXT NOT NULL, " +
+                "created_at BIGINT NOT NULL)");
+            ensureIndex(connection, "network_messages", "idx_network_messages_created", "created_at");
 
             statement.executeUpdate(
                 "CREATE TABLE IF NOT EXISTS player_names (" +
@@ -199,6 +242,32 @@ public class DatabaseManager {
         } catch (SQLException e) {
             plugin.getLogger().severe("Failed to create database schema: " + e.getMessage());
             throw new RuntimeException("Database schema creation failed", e);
+        }
+    }
+
+    private void ensureColumn(Connection connection, String table, String column, String definition) {
+        // information_schema instead of DatabaseMetaData.getColumns: null schema matches everything and "_" acts as a wildcard there
+        try (PreparedStatement check = connection.prepareStatement(
+                "SELECT COUNT(*) FROM information_schema.columns " +
+                "WHERE table_schema = DATABASE() AND table_name = ? AND column_name = ?")) {
+            check.setString(1, table);
+            check.setString(2, column);
+            try (ResultSet rs = check.executeQuery()) {
+                rs.next();
+                if (rs.getInt(1) > 0) {
+                    return;
+                }
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException("Column check failed for " + table + "." + column, e);
+        }
+        try (Statement statement = connection.createStatement()) {
+            statement.executeUpdate("ALTER TABLE " + table + " ADD COLUMN " + column + " " + definition);
+        } catch (SQLException e) {
+            // 1060 = duplicate column, which is fine when two backends boot together
+            if (e.getErrorCode() != 1060) {
+                throw new RuntimeException("Failed to add column " + table + "." + column, e);
+            }
         }
     }
 

@@ -96,7 +96,7 @@ public class JoinQuitListener implements Listener {
         }
     }
 
-    // the blaze rod tool pops into fire, the chat line would out vanished staff
+    // blaze rod chat would out vanished staff
     @EventHandler
     public void onAdvancement(PlayerAdvancementDoneEvent event) {
         java.util.UUID uuid = event.getPlayer().getUniqueId();

@@ -185,7 +185,7 @@ public class StaffModeToolListener implements Listener {
             return;
         }
         long durationSeconds = settings.getFreezeDefaultDurationSeconds();
-        String reason = "";
+        String reason = settings.getFreezeDefaultReason();
         Map<String, String> placeholders = Map.of(
                 "%staff_frozen_player%", target.getName(),
                 "%staff_frozen_staff%", staff.getName(),
@@ -252,7 +252,7 @@ public class StaffModeToolListener implements Listener {
         Inventory inv = StaffMenuHolder.create(54,
                 title + ChatColor.GRAY + " (" + (page + 1) + "/" + (maxPage + 1) + ")");
 
-        ItemStack filler = createItem(Material.GRAY_STAINED_GLASS_PANE, ChatColor.DARK_GRAY + "", null);
+        ItemStack filler = createItem(Material.GRAY_STAINED_GLASS_PANE, ChatColor.DARK_GRAY.toString(), null);
         for (int i = 0; i < inv.getSize(); i++) {
             inv.setItem(i, filler);
         }

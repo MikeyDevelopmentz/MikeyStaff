@@ -42,8 +42,7 @@ public class BanCommand implements CommandExecutor, TabCompleter {
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
-        String permission = settings.getPermission("punishments.ban");
-        if (sender instanceof Player && !sender.hasPermission(permission)) {
+        if (!settings.permits(sender, "punishments.ban")) {
             sender.sendMessage(textUtil.prefixed("errors.no-permission"));
             return true;
         }
@@ -68,7 +67,24 @@ public class BanCommand implements CommandExecutor, TabCompleter {
         }
 
         String staffName = sender instanceof Player ? ((Player) sender).getName() : "CONSOLE";
-        OfflinePlayer target = networkPlayerResolver.resolveOfflinePlayer(filteredArgs.get(0));
+        boolean issuedSilent = silent;
+        networkPlayerResolver.resolvePlayerId(filteredArgs.get(0)).whenComplete((uuid, lookupError) ->
+            schedulerProvider.runSync(() -> {
+                if (sender instanceof Player player && (!player.isOnline() || Bukkit.getPlayer(player.getUniqueId()) != player)) return;
+                if (lookupError != null) {
+                    sender.sendMessage(textUtil.prefixed("errors.database-error"));
+                    return;
+                }
+                execute(sender, networkPlayerResolver.getOfflinePlayer(uuid), filteredArgs, staffName, issuedSilent);
+            }));
+        return true;
+    }
+
+    private boolean execute(CommandSender sender, OfflinePlayer target, List<String> filteredArgs, String staffName, boolean silent) {
+        if (!settings.permits(sender, "punishments.ban")) {
+            sender.sendMessage(textUtil.prefixed("errors.no-permission"));
+            return true;
+        }
         if (target == null) {
             sender.sendMessage(textUtil.prefixed("errors.player-not-found"));
             return true;

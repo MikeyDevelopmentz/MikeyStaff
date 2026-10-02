@@ -16,7 +16,7 @@ subprojects {
         add("testRuntimeOnly", "org.junit.platform:junit-platform-launcher:1.11.4")
     }
 
-    tasks.withType<JavaCompile> {
+    tasks.withType<JavaCompile>().configureEach {
         options.encoding = "UTF-8"
         options.release.set(21)
     }

@@ -1,6 +1,6 @@
 package mikey.me.advancedstaff.velocity.messaging;
 
-import mikey.me.advancedstaff.velocity.util.JsonUtil;
+import mikey.me.core.json.JsonUtil;
 import org.junit.jupiter.api.Test;
 
 import javax.crypto.Mac;

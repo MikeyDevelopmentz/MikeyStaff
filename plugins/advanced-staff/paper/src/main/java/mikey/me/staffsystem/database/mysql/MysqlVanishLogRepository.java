@@ -27,7 +27,9 @@ public class MysqlVanishLogRepository implements VanishLogRepository {
                 statement.setLong(4, log.getTimestamp());
                 statement.executeUpdate();
             } catch (SQLException e) {
+                // rethrow so caller's error handler runs; swallowing dropped audit records silently
                 databaseManager.logSqlFailure("insert vanish log", e);
+                throw new java.util.concurrent.CompletionException(e);
             }
         }, databaseManager.getDbExecutor());
     }

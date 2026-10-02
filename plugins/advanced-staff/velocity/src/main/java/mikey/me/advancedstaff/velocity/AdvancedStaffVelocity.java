@@ -10,6 +10,7 @@ import com.velocitypowered.api.proxy.ProxyServer;
 import com.velocitypowered.api.proxy.messages.MinecraftChannelIdentifier;
 import com.velocitypowered.api.scheduler.ScheduledTask;
 import mikey.me.advancedstaff.velocity.database.VelocityDatabaseManager;
+import mikey.me.core.registry.CoreRegistry;
 import mikey.me.advancedstaff.velocity.listeners.BanEnforcementListener;
 import mikey.me.advancedstaff.velocity.listeners.NetworkPlayerTracker;
 import mikey.me.advancedstaff.velocity.listeners.VersionTracker;
@@ -70,7 +71,7 @@ public class AdvancedStaffVelocity {
 
         VelocityDatabaseManager manager = new VelocityDatabaseManager(logger);
         try {
-            manager.initialize(dataDirectory.resolve("config.properties"));
+            manager.initialize(CoreRegistry.register("staff").file("config.properties"));
         } catch (Exception e) {
             manager.shutdown();
             logger.severe("Failed to connect to MySQL: " + e.getMessage());
@@ -135,11 +136,13 @@ public class AdvancedStaffVelocity {
     }
 
     private void extractDefaultConfig() throws IOException {
-        Files.createDirectories(dataDirectory);
-        Path configFile = dataDirectory.resolve("config.properties");
+        CoreRegistry.init(dataDirectory.getParent().resolve("MikeyCore"));
+        CoreRegistry.PluginData staff = CoreRegistry.register("staff");
+        staff.copyIfAbsent("config.properties", dataDirectory.resolve("config.properties"));
+        Path configFile = staff.file("config.properties");
         if (!Files.exists(configFile)) {
             try (InputStream in = getClass().getResourceAsStream("/config.properties")) {
-                if (in != null) Files.copy(in, configFile);
+                staff.saveDefault("config.properties", in);
             }
         }
     }

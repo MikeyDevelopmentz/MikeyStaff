@@ -22,24 +22,26 @@ public class StaffModeCommand implements CommandExecutor, TabCompleter {
     private final StaffModeManager staffModeManager;
     private final VanishManager vanishManager;
     private final TextUtil textUtil;
+    private final Runnable reloadCommands;
 
-    public StaffModeCommand(ConfigurationManager configurationManager, StaffModeManager staffModeManager, VanishManager vanishManager, TextUtil textUtil) {
+    public StaffModeCommand(ConfigurationManager configurationManager, StaffModeManager staffModeManager, VanishManager vanishManager, TextUtil textUtil, Runnable reloadCommands) {
         this.configurationManager = configurationManager;
         this.settings = configurationManager.getSettings();
         this.staffModeManager = staffModeManager;
         this.vanishManager = vanishManager;
         this.textUtil = textUtil;
+        this.reloadCommands = reloadCommands;
     }
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         if (args.length > 0 && args[0].equalsIgnoreCase("reload")) {
-            String permission = settings.getPermission("staffmode.reload");
-            if (!sender.hasPermission(permission)) {
+            if (!settings.permits(sender, "staffmode.reload")) {
                 sender.sendMessage(textUtil.prefixed("errors.no-permission"));
                 return true;
             }
             configurationManager.reloadAll();
+            reloadCommands.run();
             sender.sendMessage(textUtil.prefixed("staffmode.reloaded"));
             return true;
         }
@@ -48,8 +50,7 @@ public class StaffModeCommand implements CommandExecutor, TabCompleter {
             return true;
         }
         Player player = (Player) sender;
-        String permission = settings.getPermission("staffmode.use");
-        if (!player.hasPermission(permission)) {
+        if (!settings.permits(player, "staffmode.use")) {
             player.sendMessage(textUtil.prefixed("errors.no-permission"));
             return true;
         }

@@ -32,8 +32,7 @@ public class EcseeCommand implements CommandExecutor, TabCompleter {
             return true;
         }
         Player staff = (Player) sender;
-        String permission = settings.getPermission("inventory.ecsee");
-        if (!staff.hasPermission(permission)) {
+        if (!settings.permits(staff, "inventory.ecsee")) {
             staff.sendMessage(textUtil.prefixed("errors.no-permission"));
             return true;
         }

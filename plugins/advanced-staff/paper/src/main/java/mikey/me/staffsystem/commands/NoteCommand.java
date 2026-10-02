@@ -47,8 +47,7 @@ public class NoteCommand implements CommandExecutor, TabCompleter {
         }
         String sub = args[0].toLowerCase();
         if (sub.equals("add")) {
-            String permission = settings.getPermission("notes.add");
-            if (!staff.hasPermission(permission)) {
+            if (!settings.permits(staff, "notes.add")) {
                 staff.sendMessage(textUtil.prefixed("errors.no-permission"));
                 return true;
             }
@@ -70,29 +69,28 @@ public class NoteCommand implements CommandExecutor, TabCompleter {
                 }
                 builder.append(args[i]);
             }
-        String text = builder.toString();
-        String targetName = target.getName() == null ? "Unknown" : target.getName();
-        notesManager.addNote(staff, target, text).whenComplete((note, error) -> {
-            if (error != null) {
-                reportFailure(staff, error);
-                return;
-            }
-            runOnMainThread(() -> {
-                if (!staff.isOnline()) {
+            String text = builder.toString();
+            String targetName = target.getName() == null ? "Unknown" : target.getName();
+            notesManager.addNote(staff, target, text).whenComplete((note, error) -> {
+                if (error != null) {
+                    reportFailure(staff, error);
                     return;
                 }
-                Map<String, String> placeholders = new HashMap<>();
-                placeholders.put("%target_name%", targetName);
-                placeholders.put("%note_id%", String.valueOf(note.getId()));
-                String message = textUtil.format(textUtil.prefixed("notes.added"), placeholders);
-                staff.sendMessage(message);
+                runOnMainThread(() -> {
+                    if (!staff.isOnline()) {
+                        return;
+                    }
+                    Map<String, String> placeholders = new HashMap<>();
+                    placeholders.put("%target_name%", targetName);
+                    placeholders.put("%note_id%", String.valueOf(note.getId()));
+                    String message = textUtil.format(textUtil.prefixed("notes.added"), placeholders);
+                    staff.sendMessage(message);
+                });
             });
-        });
-        return true;
-        }
+            return true;
+            }
         if (sub.equals("remove")) {
-            String permission = settings.getPermission("notes.remove");
-            if (!staff.hasPermission(permission)) {
+            if (!settings.permits(staff, "notes.remove")) {
                 staff.sendMessage(textUtil.prefixed("errors.no-permission"));
                 return true;
             }
@@ -123,8 +121,7 @@ public class NoteCommand implements CommandExecutor, TabCompleter {
             }
             return true;
         }
-        String permission = settings.getPermission("notes.add");
-        if (!staff.hasPermission(permission)) {
+        if (!settings.permits(staff, "notes.add")) {
             staff.sendMessage(textUtil.prefixed("errors.no-permission"));
             return true;
         }

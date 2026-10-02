@@ -11,7 +11,13 @@ repositories {
 }
 
 dependencies {
-    implementation("mikey.core:mikey-core:0.1.0-SNAPSHOT")
+    // compileOnly, not implementation: plugin.yml declares a hard `depend: [MikeyCore]`, so
+    // Paper resolves mikey.me.core.* from the installed MikeyCore plugin. Shading it too would
+    // create a second copy of every class (own jar wins in PluginClassLoader) and a second
+    // CoreRegistry.root static, which silently splits the data folder.
+    compileOnly("mikey.core:mikey-core:0.1.0-SNAPSHOT")
+    // compileOnly does not reach the test classpath, and the tests reference CommunicationMode.
+    testImplementation("mikey.core:mikey-core:0.1.0-SNAPSHOT")
     compileOnly("io.papermc.paper:paper-api:1.21.10-R0.1-SNAPSHOT")
     testImplementation("io.papermc.paper:paper-api:1.21.10-R0.1-SNAPSHOT")
     testImplementation("org.mockito:mockito-core:5.14.2")
@@ -23,9 +29,22 @@ dependencies {
 
 tasks {
     shadowJar {
-        relocate("com.zaxxer.hikari", "mc.spearmace.staff.libs.hikari")
+        relocate("com.zaxxer.hikari", "mikey.me.staff.libs.hikari")
+        // org.slf4j is deliberately NOT relocated: Paper exports slf4j to plugins, so the
+        // unrelocated 1.7 API Hikari compiles against resolves to the server's 2.x and keeps
+        // working (Hikari only uses signatures stable across both). Relocating it ships no
+        // StaticLoggerBinder, which silently discards every Hikari pool diagnostic.
+        // com.mysql.cj and com.google.protobuf are also left alone: the driver name is a string
+        // literal in DatabaseManager and is discovered via META-INF/services/java.sql.Driver.
         mergeServiceFiles()
+        exclude("META-INF/maven/**")
+        exclude("META-INF/*.SF", "META-INF/*.DSA", "META-INF/*.RSA")
+        exclude("LICENSE", "README", "INFO_BIN", "INFO_SRC")
         archiveClassifier.set("")
+    }
+    // The thin jar would otherwise overwrite the shaded one at the same path.
+    jar {
+        archiveClassifier.set("plain")
     }
     build {
         dependsOn(shadowJar)

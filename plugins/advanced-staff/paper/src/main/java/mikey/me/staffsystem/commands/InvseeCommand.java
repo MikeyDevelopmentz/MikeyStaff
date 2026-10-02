@@ -32,8 +32,7 @@ public class InvseeCommand implements CommandExecutor, TabCompleter {
             return true;
         }
         Player staff = (Player) sender;
-        String permission = settings.getPermission("inventory.invsee");
-        if (!staff.hasPermission(permission)) {
+        if (!settings.permits(staff, "inventory.invsee")) {
             staff.sendMessage(textUtil.prefixed("errors.no-permission"));
             return true;
         }

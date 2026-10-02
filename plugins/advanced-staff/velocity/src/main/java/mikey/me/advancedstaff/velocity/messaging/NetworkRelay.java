@@ -39,7 +39,9 @@ public class NetworkRelay {
     private final String bootId = UUID.randomUUID().toString().substring(0, 8);
     private BiConsumer<String, String> receiver = (channel, json) -> {};
     private Runnable onHeartbeatRestored = () -> {};
-    private boolean started;
+    // written on the init thread, read by poll() on a scheduler thread, no
+    // happens-before otherwise; without volatile the relay could silently never start
+    private volatile boolean started;
     private int ticks;
     private volatile long lastFailureLog;
 

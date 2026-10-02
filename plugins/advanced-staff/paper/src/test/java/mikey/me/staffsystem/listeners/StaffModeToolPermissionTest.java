@@ -78,7 +78,8 @@ class StaffModeToolPermissionTest {
         when(freezes.freeze(eq(staff), eq(target), anyLong(), anyString()))
                 .thenReturn(CompletableFuture.completedFuture(true));
         listener.onHitEntity(hit());
-        verify(freezes).freeze(staff, target, 0L, "");
+        // 600 is the SettingsConfig fallback: an unset key must not mean a permanent freeze.
+        verify(freezes).freeze(staff, target, 600L, "");
     }
 
     @Test

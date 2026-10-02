@@ -36,8 +36,7 @@ public class UnfreezeCommand implements CommandExecutor, TabCompleter {
             return true;
         }
         Player staff = (Player) sender;
-        String permission = settings.getPermission("freeze.use");
-        if (!staff.hasPermission(permission)) {
+        if (!settings.permits(staff, "freeze.use")) {
             staff.sendMessage(textUtil.prefixed("errors.no-permission"));
             return true;
         }
